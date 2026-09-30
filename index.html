@@ -210,6 +210,24 @@ section{margin-top:26px}
 .ai-row b{flex:1;font-weight:500;word-break:break-all;display:flex;flex-wrap:wrap;align-items:center}
 .ai-row i{color:#b3b8bf;font-style:normal}
 .ai-row .phone-tag{white-space:nowrap;flex:none}
+.ai-item.off{opacity:.5}
+.ai-item.off .ai-form{display:none}
+.ai-form{margin-top:10px}
+.ai-form .fld{margin-bottom:8px}
+.ai-form .fld input,.ai-form .fld textarea{padding:8px 10px;font-size:15px}
+.dup-warn{margin-top:8px;font-size:12.5px;color:var(--orange);background:var(--orange-soft);padding:6px 10px;border-radius:10px}
+
+/* search */
+.search{position:sticky;top:0;z-index:30;background:var(--bg);padding:12px 0 4px;margin:0 -2px}
+.search-box{display:flex;align-items:center;gap:8px;background:#fff;border-radius:16px;padding:0 12px;height:48px;box-shadow:0 1px 4px rgba(0,0,0,.07);border:1.5px solid transparent}
+.search-box:focus-within{border-color:var(--brand)}
+.search-box input{flex:1;border:0;outline:0;font-size:16px;background:none;min-width:0}
+.search-box input::-webkit-search-cancel-button{display:none}
+.search-box .ic{color:var(--sub)}
+.sr-group h3{margin:18px 0 8px;font-size:15px;font-weight:900;display:flex;gap:6px;align-items:center}
+.sr-group h3 small{color:var(--sub);font-weight:500}
+.sr-hit{font-size:12px;color:var(--sub);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+mark{background:var(--accent);color:inherit;border-radius:3px;padding:0 1px}
 .ai-acts{display:flex;gap:6px;margin-top:10px}
 .ai-acts .btn{flex:1;padding:0 6px}
 .ai-acts .btn:last-child{flex:0 0 40px}
@@ -313,6 +331,7 @@ const IC={
   mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
   spark:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/>',
   pause:'<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
   bell:'<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/>',
 };
 const ic=(n,s=22)=>`<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${IC[n]}</svg>`;
@@ -408,6 +427,9 @@ function renderHome(){
   const held=state.jobs.filter(j=>j.status==='보류').sort(byDT);
   const q=(act,icon,label,color)=>`<button class="q" data-act="${act}"><span class="circle" style="color:${color}">${ic(icon,26)}</span>${label}</button>`;
   $('#p-home').innerHTML=`
+  <div class="search"><div class="search-box">${ic('search',20)}<input id="q" type="search" enterkeyhint="search" autocomplete="off" value="${esc(searchQ)}" placeholder="건물·주소·전화번호·작업·날짜·금액 통합검색"><button class="icon-btn" data-act="clearQ" aria-label="지우기" style="width:30px;height:30px;${searchQ?'':'display:none'}">${ic('x',16)}</button></div></div>
+  <div id="searchRes"></div>
+  <div id="homeBody">
   <div class="home-top">
     <div><div class="today">${fmtDate(t,true)}</div>
     <h1>${esc(state.settings.bizName)}님,<br>${left?`<em>오늘 일정 ${left}건</em> 남았어요`:'<em>오늘 일정 모두 끝!</em>'}</h1></div>
@@ -430,7 +452,46 @@ function renderHome(){
     ${todays.length?todays.map(j=>jobCard(j)).join(''):empty('오늘 잡힌 일정이 없어요','newJob','일정 등록')}</section>
   ${upcoming.length?`<section><div class="sec-head"><h2>다가오는 일정</h2></div>${upcoming.map(j=>jobCard(j,true)).join('')}</section>`:''}
   ${held.length?`<section><div class="sec-head"><h2>보류 중인 일정 <small style="color:#7C3AED">${held.length}</small></h2></div>${held.map(j=>jobCard(j,true)).join('')}</section>`:''}
-  ${openC.length?`<section><div class="sec-head"><h2>처리할 민원</h2><button data-act="go" data-p="complaints">전체보기 ›</button></div>${openC.slice(0,3).map(cCard).join('')}</section>`:''}`;
+  ${openC.length?`<section><div class="sec-head"><h2>처리할 민원</h2><button data-act="go" data-p="complaints">전체보기 ›</button></div>${openC.slice(0,3).map(cCard).join('')}</section>`:''}
+  </div>`;
+  if(searchQ)updSearch();
+}
+
+/* ---------- 통합검색 ---------- */
+let searchQ='';
+// 띄어쓰기·하이픈·쉼표·"원"을 무시하고 비교 (010-1234 = 0101234, 115,000원 = 115000)
+const norm=s=>String(s??'').toLowerCase().replace(/[\s\-.,:/()~원₩]/g,'');
+function dateKeys(d){if(!d)return '';const[y,m,dd]=d.split('-').map(Number);return `${d} ${y}년${m}월${dd}일 ${m}월${dd}일 ${m}/${dd} ${m}.${dd} ${pad(m)}${pad(dd)} ${WD[new Date(d+'T00:00').getDay()]}요일`}
+const moneyKeys=n=>n?`${n} ${won(n)} ${n>=10000?shortWon(n):''}`:'';
+function searchAll(q){
+  const terms=q.trim().split(/\s+/).map(norm).filter(Boolean);if(!terms.length)return null;
+  const hit=hay=>{const h=norm(hay);return terms.every(t=>h.includes(t))};
+  const R={jobs:[],complaints:[],bills:[],villas:[]};
+  for(const j of state.jobs){const v=state.villas.find(x=>x.name===j.villa);
+    if(hit([j.villa,j.unit,j.title,j.memo,j.contact,j.status,dateKeys(j.date),j.time,fmtTimeShort(j.time),v?.address].join(' ')))R.jobs.push(j)}
+  for(const c of state.complaints){const v=state.villas.find(x=>x.name===c.villa);
+    if(hit([c.villa,c.unit,c.title,c.content,c.reporter,c.phone,c.status,dateKeys(c.date),v?.address].join(' ')))R.complaints.push(c)}
+  for(const b of state.bills){const s=billSum(b),v=state.villas.find(x=>x.name===b.villa);
+    if(hit([b.villa,b.unit,b.title,b.to,b.phone,b.memo,b.status,dateKeys(b.date),v?.address,moneyKeys(s.total),moneyKeys(s.sub),...(b.items||[]).map(i=>`${i.name} ${moneyKeys(i.price)} ${moneyKeys(i.qty*i.price)}`)].join(' ')))R.bills.push(b)}
+  for(const v of state.villas)if(hit([v.name,v.address,v.owner,v.units,v.memo].join(' ')))R.villas.push(v);
+  R.jobs.sort((a,b)=>b.date.localeCompare(a.date));R.complaints.sort((a,b)=>b.date.localeCompare(a.date));R.bills.sort((a,b)=>b.date.localeCompare(a.date));
+  return R;
+}
+function updSearch(){
+  const box=$('#searchRes'),body=$('#homeBody'),clr=$('[data-act=clearQ]');if(!box)return;
+  const R=searchAll(searchQ);
+  if(clr)clr.style.display=searchQ?'':'none';
+  if(!R){box.innerHTML='';body.style.display='';return}
+  body.style.display='none';
+  const n=R.jobs.length+R.complaints.length+R.bills.length+R.villas.length;
+  const grp=(title,arr,fn,go)=>arr.length?`<div class="sr-group"><h3>${title} <small>${arr.length}건</small></h3>${arr.slice(0,30).map(fn).join('')}${arr.length>30?`<p class="hint">최근 30건만 보여요. 검색어를 더 자세히 입력해 보세요.</p>`:''}</div>`:'';
+  box.innerHTML=n?`<p class="hint" style="margin:10px 0 0">"${esc(searchQ)}" 검색 결과 ${n}건</p>
+    ${grp('🏢 건물',R.villas,v=>`<div class="card list-row" style="padding:14px" data-act="editVilla" data-id="${v.id}"><div style="min-width:0"><div class="t">${esc(v.name)}</div><div class="s">${esc(v.address||'주소 미입력')}${v.owner?' · '+esc(v.owner):''}</div></div>${ic('chevR',18)}</div>`)}
+    ${grp('📅 일정',R.jobs,j=>jobCard(j,true))}
+    ${grp('📢 민원',R.complaints,cCard)}
+    ${grp('🧾 청구',R.bills,bCard)}`
+    :`<div class="empty" style="margin-top:14px">"${esc(searchQ)}"에 맞는 기록이 없어요<br><small>띄어쓰기·하이픈은 무시하고 찾아요 (예: 01012345678, 115000)</small></div>`;
+  hydrate(box);
 }
 
 let selDate=todayStr(),cal={y:new Date().getFullYear(),m:new Date().getMonth()};
@@ -494,6 +555,7 @@ function renderScan(){
   <section class="result">
     <div class="sec-head"><h2>인식된 글자</h2><div style="display:flex;gap:12px">${aiKey()&&scan.text?`<button data-act="aiText" style="color:#7C3AED;font-weight:700">✨ AI 항목 정리</button>`:''}<button data-act="copyScan">복사</button></div></div>
     <textarea id="scanText" placeholder="여기에 글자가 표시됩니다. 틀린 부분은 직접 고칠 수 있어요.">${esc(scan.text)}</textarea>
+    <button class="btn ghost block" data-act="splitText" style="margin:8px 0 4px">${ic('building',18)} 건물 이름별로 나눠서 일정 만들기</button>
     <div class="det" id="scanDet">${detHTML()}</div>
     <div class="actions">
       <button class="btn primary" data-act="scanToJob">${ic('cal',18)} 일정 등록</button>
@@ -503,23 +565,49 @@ function renderScan(){
     </div>
   </section>`:''}`;
 }
+// 사진 분석 결과: 건물 이름마다 한 건씩, 직접 고치고 체크해서 등록
 function itemsHTML(){
-  const its=scan.items,row=(k,v)=>`<div class="ai-row"><span>${k}</span><b>${v?esc(v):'<i>-</i>'}</b></div>`;
+  const its=scan.items,inp=(i,f,v,ph,type='text')=>`<input type="${type}" data-sf="${f}" data-i="${i}" value="${esc(v)}" placeholder="${ph}">`;
+  const dup=it=>state.jobs.some(j=>j.villa===it.villa&&j.date===(it.date||todayStr())&&(j.time||'')===(it.time||'')&&j.status!=='취소');
   return `<section class="result">
-    <div class="sec-head"><h2>✨ AI 분석 결과 ${its.length}건</h2>${scan.file?`<button data-act="scanOcr">글자만 보기</button>`:''}</div>
-    ${its.length?its.map((it,i)=>`<div class="card ai-item">
-      <div class="row-between"><label class="check" style="margin:0"><input type="checkbox" checked data-si="${i}"> <b>항목 ${i+1}</b></label>
-        ${it.date?`<span class="badge b-blue" style="margin:0">${fmtDate(it.date)}${it.time?' '+fmtTimeShort(it.time):''}</span>`:''}</div>
-      ${row('빌라명',it.villa)}${row('호수',it.unit)}${row('작업 내용',it.work)}
-      <div class="ai-row"><span>연락처</span><b>${it.contact?it.contact.split(',').map(p=>p.trim()).filter(Boolean).map(p=>`<span class="phone-tag" style="margin:0 4px 4px 0">${esc(p)}<a class="mini" href="tel:${tel(p)}" aria-label="전화">${ic('phone',16)}</a></span>`).join(''):'<i>-</i>'}</b></div>
-      <div class="ai-acts"><button class="btn sm ghost" data-act="siJob" data-i="${i}">${ic('cal',16)} 일정</button><button class="btn sm ghost" data-act="siC" data-i="${i}">${ic('alert',16)} 민원</button><button class="btn sm ghost" data-act="siSms" data-i="${i}">${ic('msg',16)} 문자</button><button class="btn sm ghost" data-act="copy" data-t="${esc(itemText(it,i))}">${ic('copy',16)}</button></div>
+    <div class="sec-head"><h2>${scan.ai?'✨ AI ':''}분석 결과 · 건물 ${its.length}곳</h2>${scan.file&&scan.ai?`<button data-act="scanOcr">글자만 보기</button>`:''}</div>
+    <p class="hint" style="margin:0 0 10px">건물 이름이 나올 때마다 일정 1건으로 나눴어요. 내용을 확인·수정하고 등록할 항목만 체크하세요.</p>
+    ${its.length?its.map((it,i)=>`<div class="card ai-item ${it.off?'off':''}">
+      <div class="row-between"><label class="check" style="margin:0"><input type="checkbox" ${it.off?'':'checked'} data-si="${i}"> <b>${i+1}. ${esc(it.villa||'건물 이름 없음')}</b></label>
+        <button class="icon-btn" data-act="siDel" data-i="${i}" aria-label="항목 빼기" style="width:30px;height:30px">${ic('x',16)}</button></div>
+      ${dup(it)?`<div class="dup-warn">⚠ 같은 건물·날짜·시간에 이미 일정이 있어요</div>`:''}
+      <div class="ai-form">
+        <div class="row2">${fld('건물 이름',inp(i,'villa',it.villa,'예) 하늘빌라'))}${fld('호수',inp(i,'unit',it.unit,'301호'))}</div>
+        <div class="row2">${fld('날짜',inp(i,'date',it.date,'','date'))}${fld('시간',inp(i,'time',it.time,'','time'))}</div>
+        ${fld('작업 내용 (특이사항 포함)',`<textarea data-sf="work" data-i="${i}" rows="2">${esc(it.work)}</textarea>`)}
+        ${fld('연락처',inp(i,'contact',it.contact,'010-0000-0000'))}
+      </div>
+      <div class="ai-acts"><button class="btn sm ghost" data-act="siJob" data-i="${i}">${ic('edit',16)} 자세히</button><button class="btn sm ghost" data-act="siC" data-i="${i}">${ic('alert',16)} 민원</button><button class="btn sm ghost" data-act="siSms" data-i="${i}">${ic('msg',16)} 문자</button><button class="btn sm ghost" data-act="siCopyOne" data-i="${i}" aria-label="복사">${ic('copy',16)}</button></div>
     </div>`).join(''):'<div class="empty">업무 항목을 찾지 못했어요</div>'}
     ${its.length?`<div class="actions">
-      <button class="btn primary" data-act="siSaveAll" style="grid-column:1/-1">${ic('cal',18)} 선택한 항목 일정 등록</button>
+      <button class="btn primary" data-act="siSaveAll" id="siSaveBtn" style="grid-column:1/-1">${ic('check',18)} 체크한 ${its.filter(x=>!x.off).length}건 일정 등록</button>
       <button class="btn yellow" data-act="siCopy">${ic('copy',18)} 목록 복사</button>
       <button class="btn ghost" data-act="siCopyTsv">${ic('copy',18)} 엑셀용 복사</button>
     </div>`:''}
   </section>`;
+}
+// 글자 인식(OCR) 결과를 건물 이름 기준으로 나누기 — 각 덩어리의 맨 앞 글씨 = 건물 이름
+const BLD_SUFFIX=/(빌라|맨션|맨숀|하우스|빌리지|빌|타운|주택|아파트|오피스텔|빌딩|상가|원룸|캐슬|팰리스|하이츠|파크|힐|뷰|홈|궁전|파레스|코아|프라자|플라자)$/;
+function localSplit(text){
+  const lines=String(text||'').split('\n').map(l=>l.trim()).filter(Boolean),blocks=[];
+  const known=state.villas.map(v=>v.name.replace(/\(.*?\)|\s/g,'')).filter(Boolean);
+  const firstTok=l=>(l.match(/^[^\s,.:;()\[\]\-~]+/)||[''])[0].replace(/\d+\s*동.*$|\d+호.*$|\d.*$/,'');
+  const isBuilding=l=>{const t=firstTok(l);if(!t||!/^[가-힣A-Za-z]/.test(t))return false;
+    if(BLD_SUFFIX.test(t)||known.some(k=>t.startsWith(k)||k.startsWith(t)&&t.length>=2))return true;
+    // 호수가 같은 줄에 있고 첫 단어가 날짜·시간·작업어가 아니면 건물 이름으로 봄
+    return /\d{2,4}\s*호/.test(l)&&!/^(오전|오후|아침|저녁|밤|낮|오늘|내일|모레|연락|전화|메모|비번|비고|특이|참고|요청)/.test(t)&&!KEYWORDS.includes(t);};
+  for(const l of lines){if(!blocks.length||isBuilding(l))blocks.push([l]);else blocks[blocks.length-1].push(l)}
+  return blocks.map(b=>{
+    const villa=firstTok(b[0])||b[0].split(/\s+/)[0];
+    const rest=b.join(' ').slice(b[0].indexOf(villa)+villa.length).trim();
+    const p=parseText(rest),guess=localExtract(rest)[0];
+    return{villa,unit:p.units[0]||'',date:p.dates[0]||'',time:p.times[0]||'',contact:p.phones.join(', '),title:guess.title,work:rest};
+  });
 }
 function detHTML(){
   const p=scan.parsed=parseText(scan.text||'');
@@ -558,6 +646,10 @@ function parseText(raw){
   if(/오늘/.test(t2))add(dates,ts);
   if(/내일/.test(t2))add(dates,addDays(ts,1));
   if(/모레/.test(t2))add(dates,addDays(ts,2));
+  // "토요일", "다음주 화요일" → 다가오는 그 요일 날짜
+  const rW=/(이번\s*주|다음\s*주|담주)?\s*([월화수목금토일])요일/g;
+  while((m=rW.exec(t2))){const want=WD.indexOf(m[2]),now=today.getDay();let diff=(want-now+7)%7;
+    if(m[1]&&/다음|담/.test(m[1]))diff+=diff===0||want>now?7:0;add(dates,addDays(ts,diff))}
   const times=[];
   const pushT=(ap,h,mi)=>{h=+h;mi=+mi||0;if(h>24||mi>59)return;
     if(ap&&/오후|저녁|밤|낮/.test(ap)&&h<12)h+=12;else if(!ap&&h>=1&&h<=7)h+=12; // 1~7시는 오후로 간주
@@ -569,6 +661,7 @@ function parseText(raw){
   const units=[];
   const rU=/(?:(\d{1,3})\s*동\s*)?(?<!\d)(B?\d{2,4})\s*호(?!수|출|선)/g;
   while((m=rU.exec(t2)))add(units,`${m[1]?m[1]+'동 ':''}${m[2]}호`);
+  if(!units.length&&/공용|복도|계단|옥상|주차장|외벽/.test(t2))add(units,'공용');
   const flat=t.replace(/\s/g,'');
   const villas=state.villas.filter(v=>{const n=v.name.replace(/\(.*?\)|\s/g,'');const core=n.replace(/(빌라|맨션|하우스|주택|타운|빌)$/,'');return n&&(flat.includes(n)||(core.length>=2&&flat.includes(core)))}).map(v=>v.name);
   // 목록에 없는 새 건물 이름도 "OO빌라" 형태면 찾기
@@ -607,7 +700,7 @@ async function handleScanFile(file){
     const timer=setInterval(()=>{scan.progress=Math.min(.95,(Date.now()-t0)/25000);const b=$('#p-scan .progress .bar div');if(b)b.style.width=Math.round(scan.progress*100)+'%'},300);
     try{
       const img=(await compress(file,1600,.85)).split(',')[1];
-      scan.items=await aiScan({image:img});
+      scan.items=await aiScan({image:img});scan.ai=true;
       if(!scan.items.length)toast('사진에서 업무 항목을 찾지 못했어요');
       clearInterval(timer);scan.busy=false;if(cur==='scan')render();return;
     }catch(e){clearInterval(timer);toast(e.message+' · 글자 인식으로 바꿨어요')}
@@ -627,6 +720,7 @@ async function runOcr(file){
     const [canvas,worker]=await Promise.all([ocrCanvas(file),getWorker()]);
     const{data}=await worker.recognize(canvas);
     scan.text=cleanOcr(data.text);
+    if(scan.text){scan.items=localSplit(scan.text);scan.ai=false}
     if(!scan.text)toast('글자를 찾지 못했어요. 더 가까이, 밝게 찍어 주세요.');
   }catch(e){scan.text='';toast(e.message||'인식 실패')}
   scan.busy=false;ocrProgress=null;
@@ -688,7 +782,9 @@ const SCAN_RULES=`첨부된 이미지에 있는 모든 업무 및 일정 내역�
    - 호수:
    - 작업 내용 (날짜, 시간, 특이사항 포함):
    - 연락처:
-3. 데이터베이스나 일정 관리 프로그램에 한 번에 복사·저장하기 좋도록, 각 항목이 명확히 구분되는 목록 형태로 만들어 주세요.`;
+3. 데이터베이스나 일정 관리 프로그램에 한 번에 복사·저장하기 좋도록, 각 항목이 명확히 구분되는 목록 형태로 만들어 주세요.
+4. 각 항목의 맨 앞에 나오는 글씨는 무조건 건물 이름(빌라명)입니다. 나머지 글씨에서 호수·날짜·시간·작업 내용·연락처를 분석해 주세요.
+5. 건물 이름이 새로 나올 때마다 반드시 새 항목(일정 1건)으로 나눠 주세요. 같은 건물 이름이 다시 나와도 따로 한 건으로 만드세요.`;
 const SCAN_SCHEMA={type:'object',additionalProperties:false,required:['items'],properties:{items:{type:'array',items:{type:'object',additionalProperties:false,
   required:['villa','unit','work','title','date','time','contact'],
   properties:{
@@ -713,12 +809,12 @@ async function aiScan({image,text}){
 }
 const itemText=(it,i)=>`[${i+1}]\n- 빌라명: ${it.villa||'-'}\n- 호수: ${it.unit||'-'}\n- 작업 내용: ${it.work||'-'}\n- 연락처: ${it.contact||'-'}`;
 const itemTsv=items=>['빌라명\t호수\t날짜\t시간\t작업 내용\t연락처',...items.map(it=>[it.villa,it.unit,it.date,it.time,it.work,it.contact].map(v=>String(v||'').replace(/[\t\n]/g,' ')).join('\t'))].join('\n');
-const itemToJob=it=>({villa:it.villa,unit:it.unit,date:it.date||todayStr(),time:it.time,title:it.title||it.work.slice(0,30),contact:(it.contact||'').split(',')[0].trim(),memo:it.work});
+const itemToJob=it=>({villa:(it.villa||'').trim(),unit:it.unit,date:it.date||todayStr(),time:it.time,title:it.title||localExtract(it.work||'')[0].title||(it.work||'').slice(0,30)||'현장 방문',contact:(it.contact||'').split(',')[0].trim(),memo:it.work});
 // AI 키가 없을 때 쓰는 기본 분석
 function localExtract(text){
   const p=parseText(text);
   let rest=text;
-  [...p.phones.map(x=>x.replace(/-/g,'[\\s\\-.]*')),'\\d{1,2}\\s*월\\s*\\d{1,2}\\s*일','(오늘|내일|모레)','(오전|오후|아침|낮|저녁|밤)?\\s*\\d{1,2}\\s*시\\s*(\\d{1,2}\\s*분|반)?','\\d{1,2}\\s*[:：]\\s*\\d{2}','(\\d{1,3}\\s*동\\s*)?\\d{2,4}\\s*호',...p.villas.map(v=>v.replace(/\(.*?\)/g,''))]
+  [...p.phones.map(x=>x.replace(/-/g,'[\\s\\-.]*')),'\\d{1,2}\\s*월\\s*\\d{1,2}\\s*일','\\d{1,2}\\s*/\\s*\\d{1,2}','(이번\\s*주|다음\\s*주|담주)?\\s*[월화수목금토일]요일','공용','(오늘|내일|모레)','(오전|오후|아침|낮|저녁|밤)?\\s*\\d{1,2}\\s*시\\s*(\\d{1,2}\\s*분|반)?','\\d{1,2}\\s*[:：]\\s*\\d{2}','(\\d{1,3}\\s*동\\s*)?\\d{2,4}\\s*호',...p.villas.map(v=>v.replace(/\(.*?\)/g,''))]
     .forEach(r=>{rest=rest.replace(new RegExp(r,'g'),' ')});
   rest=rest.replace(/(에|에서|으로|로|까지|쯤|경|방문|예약|일정|잡아\s*줘|등록\s*해?\s*줘|해\s*줘|부탁|전화번호|연락처|번호|요청)(?=\s|$|[,.])/g,' ').replace(/[,.]/g,' ').replace(/\s+/g,' ').trim();
   const title=rest.length>=2?rest.slice(0,40):(p.keywords.length?p.keywords.slice(0,3).join('·')+' 점검':'');
@@ -1006,18 +1102,26 @@ const A={
   scanToC:async()=>{const p=scanPrefill();const photos=scan.img?[await putPhoto(scan.img)]:[];cForm({villa:p.villa,unit:p.unit,phone:p.contact,date:todayStr(),title:p.title.replace(/ 점검$/,''),content:p.memo,photos})},
   scanToSms:()=>A.smsTo({dataset:{p:scanPrefill().contact}}),
   scanToBill:()=>{const p=scanPrefill();billForm({villa:p.villa,unit:p.unit,phone:p.contact,title:p.title.replace(/ 점검$/,' 수리'),memo:p.memo})},
+  clearQ:()=>{searchQ='';const i=$('#q');if(i){i.value='';i.focus()}updSearch()},
   siJob:el=>jobForm(itemToJob(scan.items[+el.dataset.i])),
   siC:async el=>{const it=scan.items[+el.dataset.i];const photos=scan.img?[await putPhoto(scan.img)]:[];cForm({villa:it.villa,unit:it.unit,phone:(it.contact||'').split(',')[0].trim(),date:todayStr(),title:it.title,content:it.work,photos})},
   siSms:el=>{const it=scan.items[+el.dataset.i];openSms({빌라:it.villa,호수:it.unit,날짜:fmtDate(it.date),시간:fmtTime(it.time),작업:it.title},(it.contact||'').split(',')[0].trim())},
-  siSaveAll:()=>{const picked=$$('#p-scan [data-si]').filter(c=>c.checked).map(c=>itemToJob(scan.items[+c.dataset.si]));if(!picked.length){toast('선택한 항목이 없어요');return}
-    if(!confirm(`${picked.length}건을 일정으로 등록할까요?\n(날짜가 없는 항목은 오늘 날짜로 들어가요)`))return;
+  siSaveAll:()=>{
+    const picked=scan.items.filter(x=>!x.off).map(itemToJob);if(!picked.length){toast('체크한 항목이 없어요');return}
+    const noName=picked.filter(j=>!j.villa).length;if(noName){toast(`건물 이름이 빈 항목이 ${noName}건 있어요. 채우거나 체크를 풀어 주세요`);return}
+    const list=picked.map((j,i)=>`${i+1}. ${j.villa} ${j.unit} · ${fmtDate(j.date)} ${j.time?fmtTimeShort(j.time):'시간 미정'} · ${j.title}`).join('\n');
+    if(!confirm(`아래 ${picked.length}건을 일정으로 등록할까요?\n\n${list}\n\n(날짜가 없는 항목은 오늘 날짜로 들어가요)`))return;
     picked.forEach(j=>{ensureVilla(j.villa);state.jobs.push({...j,id:uid(),status:'예약',complaintId:''})});save();
-    selDate=picked[0].date;const d=new Date(selDate+'T00:00');cal={y:d.getFullYear(),m:d.getMonth()};go('schedule');toast(`일정 ${picked.length}건을 등록했어요`)},
+    scan.items=scan.items.filter(x=>x.off);if(!scan.items.length)scan.items=null;
+    selDate=picked.map(j=>j.date).sort()[0];const d=new Date(selDate+'T00:00');cal={y:d.getFullYear(),m:d.getMonth()};go('schedule');toast(`일정 ${picked.length}건을 등록했어요`)},
+  siDel:el=>{scan.items.splice(+el.dataset.i,1);render()},
+  siCopyOne:el=>{const i=+el.dataset.i;copyText(itemText(scan.items[i],i))},
+  splitText:()=>{const t=$('#scanText').value.trim();if(!t){toast('먼저 글자를 입력하거나 사진을 찍어 주세요');return}scan.text=t;scan.items=localSplit(t);scan.ai=false;render();$('#p-scan .ai-item')?.scrollIntoView({behavior:'smooth',block:'start'});toast(`건물 ${scan.items.length}곳으로 나눴어요. 확인 후 등록하세요`)},
   siCopy:()=>copyText(scan.items.map(itemText).join('\n\n')),
   siCopyTsv:()=>{copyText(itemTsv(scan.items));setTimeout(()=>toast('엑셀·구글시트 첫 칸에 붙여넣으면 칸이 나뉘어 들어가요'),2300)},
   scanOcr:()=>scan.file&&runOcr(scan.file),
   aiText:async()=>{const text=$('#scanText').value.trim();if(!text)return;scan={...scan,text,busy:true,progress:.3,status:'✨ AI가 항목별로 정리하는 중…'};render();
-    try{scan.items=await aiScan({text});scan.text=null}catch(e){toast(e.message)}scan.busy=false;render()},
+    try{scan.items=await aiScan({text});scan.ai=true;scan.text=null}catch(e){toast(e.message)}scan.busy=false;render()},
   voice:()=>openVoice(),
   micToggle:()=>{if(!SR){toast('키보드의 🎤 버튼으로 말해 주세요');$('#voiceText').focus();return}recOn?stopRec():startRec()},
   voiceClear:()=>{stopRec(true);$('#voiceText').value='';updMic()},
@@ -1055,11 +1159,15 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('submit',e=>e.preventDefault());
 document.addEventListener('input',e=>{
+  if(e.target.id==='q'){searchQ=e.target.value;updSearch();return}
+  if(e.target.dataset.sf&&scan.items){const it=scan.items[+e.target.dataset.i];it[e.target.dataset.sf]=e.target.value;if(e.target.dataset.sf==='work')it.title='';
+    if(e.target.dataset.sf==='villa'){const b=e.target.closest('.ai-item').querySelector('.check b');b.textContent=`${+e.target.dataset.i+1}. ${e.target.value||'건물 이름 없음'}`}return}
   if(e.target.id==='scanText'){scan.text=e.target.value;clearTimeout(A._t);A._t=setTimeout(()=>{const d=$('#scanDet');if(d)d.innerHTML=detHTML()},250)}
   if(e.target.closest('#f[data-kind=bill]'))updTotal();
 });
 document.addEventListener('change',async e=>{
   const t=e.target;
+  if(t.matches('[data-si]')&&scan.items){scan.items[+t.dataset.si].off=!t.checked;t.closest('.ai-item').classList.toggle('off',!t.checked);const b=$('#siSaveBtn');if(b)b.innerHTML=`${ic('check',18)} 체크한 ${scan.items.filter(x=>!x.off).length}건 일정 등록`;return}
   if(t.matches('[data-scan]')&&t.files[0]){const f=t.files[0];t.value='';handleScanFile(f)}
   else if(t.matches('[data-addphoto]')){const files=[...t.files];t.value='';for(const f of files){try{formPhotos.push(await putPhoto(await compress(f)))}catch{toast('사진을 추가하지 못했어요')}}refreshStrip()}
   else if(t.matches('[data-import]')&&t.files[0]){importData(t.files[0]);t.value=''}
