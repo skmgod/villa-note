@@ -83,6 +83,9 @@ section{margin-top:26px}
 .b-blue{background:var(--blue-soft);color:var(--blue)}.b-green{background:var(--green-soft);color:var(--green)}
 .b-red{background:var(--red-soft);color:var(--red)}.b-orange{background:var(--orange-soft);color:var(--orange)}
 .b-gray{background:var(--gray-soft);color:var(--sub)}
+.b-purple{background:#F1EAFE;color:#7C3AED}
+.job.hold{background:repeating-linear-gradient(135deg,#fff,#fff 10px,#FAF7FF 10px,#FAF7FF 20px)}
+.job.hold .job-time b{color:#7C3AED}
 .row-between{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .row-between small{color:var(--sub);font-size:12px}
 .cmp,.bill{display:flex;gap:12px;align-items:center}
@@ -200,6 +203,17 @@ section{margin-top:26px}
 .nav .m .ic{transform:rotate(4deg)}
 .nav .center{gap:2px;padding-top:0}
 
+/* AI scan items */
+.ai-item{cursor:default}
+.ai-row{display:flex;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.ai-row span{width:64px;flex:none;color:var(--sub);font-size:13px;padding-top:1px}
+.ai-row b{flex:1;font-weight:500;word-break:break-all;display:flex;flex-wrap:wrap;align-items:center}
+.ai-row i{color:#b3b8bf;font-style:normal}
+.ai-row .phone-tag{white-space:nowrap;flex:none}
+.ai-acts{display:flex;gap:6px;margin-top:10px}
+.ai-acts .btn{flex:1;padding:0 6px}
+.ai-acts .btn:last-child{flex:0 0 40px}
+
 /* voice */
 .voice-banner{display:flex;width:100%;align-items:center;gap:14px;margin:10px 0 0;padding:16px 18px;border-radius:22px;background:var(--brand);color:#fff;text-align:left}
 .voice-banner .vb-ic{width:52px;height:52px;border-radius:50%;background:var(--accent);color:var(--brand);display:grid;place-items:center;flex:none}
@@ -298,6 +312,7 @@ const IC={
   edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',
   mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
   spark:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/>',
+  pause:'<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>',
   bell:'<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/>',
 };
 const ic=(n,s=22)=>`<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${IC[n]}</svg>`;
@@ -345,7 +360,7 @@ function ensureVilla(name){name=(name||'').trim();if(name&&!state.villas.some(v=
 const byDT=(a,b)=>(a.date+(a.time||'99')).localeCompare(b.date+(b.time||'99'));
 const jobsOn=d=>state.jobs.filter(j=>j.date===d).sort(byDT);
 function billSum(b){const sub=(b.items||[]).reduce((s,i)=>s+(+i.qty||0)*(+i.price||0),0);const vat=b.vat?Math.round(sub*.1):0;return{sub,vat,total:sub+vat}}
-const BADGE={'예약':'b-blue','완료':'b-green','취소':'b-gray','접수':'b-red','처리중':'b-orange','미청구':'b-gray','청구':'b-orange','입금완료':'b-green'};
+const BADGE={'예약':'b-blue','보류':'b-purple','완료':'b-green','취소':'b-gray','접수':'b-red','처리중':'b-orange','미청구':'b-gray','청구':'b-orange','입금완료':'b-green'};
 const badge=s=>`<span class="badge ${BADGE[s]||'b-gray'}">${esc(s)}</span>`;
 
 /* ---------- navigation ---------- */
@@ -365,7 +380,7 @@ function go(p){cur=p;render();window.scrollTo(0,0)}
 /* ---------- cards ---------- */
 const empty=(msg,act,label)=>`<div class="empty">${msg}${act?`<br><button class="btn sm primary" data-act="${act}">${ic('plus',16)} ${label}</button>`:''}</div>`;
 function jobCard(j,showDate){
-  return `<div class="card job ${j.status!=='예약'?'done':''}" data-act="editJob" data-id="${j.id}">
+  return `<div class="card job ${j.status==='완료'||j.status==='취소'?'done':j.status==='보류'?'hold':''}" data-act="editJob" data-id="${j.id}">
     <div class="job-time">${showDate?`<small>${fmtDate(j.date).replace(/ \(.\)/,'')}</small>`:''}<b>${fmtTimeShort(j.time)}</b></div>
     <div class="job-main"><div class="job-title">${esc(j.title)}</div><div class="job-sub">${esc((j.villa||""))} ${esc(j.unit)}</div>${badge(j.status)}</div>
     <div class="job-acts">${j.contact?`<a class="icon-btn" href="tel:${tel(j.contact)}" aria-label="전화">${ic('phone',18)}</a><button class="icon-btn" data-act="smsJob" data-id="${j.id}" aria-label="문자">${ic('msg',18)}</button>`:''}
@@ -390,6 +405,7 @@ function renderHome(){
   const openC=state.complaints.filter(c=>c.status!=='완료').sort((a,b)=>b.date.localeCompare(a.date));
   const unpaid=state.bills.filter(b=>b.status!=='입금완료').reduce((s,b)=>s+billSum(b).total,0);
   const upcoming=state.jobs.filter(j=>j.date>t&&j.date<=addDays(t,7)&&j.status==='예약').sort(byDT).slice(0,5);
+  const held=state.jobs.filter(j=>j.status==='보류').sort(byDT);
   const q=(act,icon,label,color)=>`<button class="q" data-act="${act}"><span class="circle" style="color:${color}">${ic(icon,26)}</span>${label}</button>`;
   $('#p-home').innerHTML=`
   <div class="home-top">
@@ -413,6 +429,7 @@ function renderHome(){
   <section><div class="sec-head"><h2>오늘 일정</h2><button data-act="go" data-p="schedule">전체보기 ›</button></div>
     ${todays.length?todays.map(j=>jobCard(j)).join(''):empty('오늘 잡힌 일정이 없어요','newJob','일정 등록')}</section>
   ${upcoming.length?`<section><div class="sec-head"><h2>다가오는 일정</h2></div>${upcoming.map(j=>jobCard(j,true)).join('')}</section>`:''}
+  ${held.length?`<section><div class="sec-head"><h2>보류 중인 일정 <small style="color:#7C3AED">${held.length}</small></h2></div>${held.map(j=>jobCard(j,true)).join('')}</section>`:''}
   ${openC.length?`<section><div class="sec-head"><h2>처리할 민원</h2><button data-act="go" data-p="complaints">전체보기 ›</button></div>${openC.slice(0,3).map(cCard).join('')}</section>`:''}`;
 }
 
@@ -470,10 +487,12 @@ function renderScan(){
   </div>
   <button class="link-btn" data-act="pasteMode">사진 대신 받은 문자 내용 붙여넣기</button>
   ${scan.img?`<img class="scan-preview" src="${scan.img}" data-act="viewSrc" alt="">`:''}
+  ${!aiKey()&&!scan.img&&scan.text===null?`<div class="ai-note" style="margin-top:14px">${ic('spark',16)} 설정 › AI 연결에 키를 넣으면 사진 속 여러 건을 AI가 항목별로 정리해요</div>`:''}
   ${scan.busy?`<div class="progress"><b>${esc(scan.status)}</b><div class="bar"><div style="width:${Math.round(scan.progress*100)}%"></div></div></div>`:''}
+  ${scan.items&&!scan.busy?itemsHTML():''}
   ${scan.text!==null&&!scan.busy?`
   <section class="result">
-    <div class="sec-head"><h2>인식된 글자</h2><button data-act="copyScan">복사</button></div>
+    <div class="sec-head"><h2>인식된 글자</h2><div style="display:flex;gap:12px">${aiKey()&&scan.text?`<button data-act="aiText" style="color:#7C3AED;font-weight:700">✨ AI 항목 정리</button>`:''}<button data-act="copyScan">복사</button></div></div>
     <textarea id="scanText" placeholder="여기에 글자가 표시됩니다. 틀린 부분은 직접 고칠 수 있어요.">${esc(scan.text)}</textarea>
     <div class="det" id="scanDet">${detHTML()}</div>
     <div class="actions">
@@ -483,6 +502,24 @@ function renderScan(){
       <button class="btn ghost" data-act="scanToBill">${ic('bill',18)} 청구서</button>
     </div>
   </section>`:''}`;
+}
+function itemsHTML(){
+  const its=scan.items,row=(k,v)=>`<div class="ai-row"><span>${k}</span><b>${v?esc(v):'<i>-</i>'}</b></div>`;
+  return `<section class="result">
+    <div class="sec-head"><h2>✨ AI 분석 결과 ${its.length}건</h2>${scan.file?`<button data-act="scanOcr">글자만 보기</button>`:''}</div>
+    ${its.length?its.map((it,i)=>`<div class="card ai-item">
+      <div class="row-between"><label class="check" style="margin:0"><input type="checkbox" checked data-si="${i}"> <b>항목 ${i+1}</b></label>
+        ${it.date?`<span class="badge b-blue" style="margin:0">${fmtDate(it.date)}${it.time?' '+fmtTimeShort(it.time):''}</span>`:''}</div>
+      ${row('빌라명',it.villa)}${row('호수',it.unit)}${row('작업 내용',it.work)}
+      <div class="ai-row"><span>연락처</span><b>${it.contact?it.contact.split(',').map(p=>p.trim()).filter(Boolean).map(p=>`<span class="phone-tag" style="margin:0 4px 4px 0">${esc(p)}<a class="mini" href="tel:${tel(p)}" aria-label="전화">${ic('phone',16)}</a></span>`).join(''):'<i>-</i>'}</b></div>
+      <div class="ai-acts"><button class="btn sm ghost" data-act="siJob" data-i="${i}">${ic('cal',16)} 일정</button><button class="btn sm ghost" data-act="siC" data-i="${i}">${ic('alert',16)} 민원</button><button class="btn sm ghost" data-act="siSms" data-i="${i}">${ic('msg',16)} 문자</button><button class="btn sm ghost" data-act="copy" data-t="${esc(itemText(it,i))}">${ic('copy',16)}</button></div>
+    </div>`).join(''):'<div class="empty">업무 항목을 찾지 못했어요</div>'}
+    ${its.length?`<div class="actions">
+      <button class="btn primary" data-act="siSaveAll" style="grid-column:1/-1">${ic('cal',18)} 선택한 항목 일정 등록</button>
+      <button class="btn yellow" data-act="siCopy">${ic('copy',18)} 목록 복사</button>
+      <button class="btn ghost" data-act="siCopyTsv">${ic('copy',18)} 엑셀용 복사</button>
+    </div>`:''}
+  </section>`;
 }
 function detHTML(){
   const p=scan.parsed=parseText(scan.text||'');
@@ -562,8 +599,24 @@ async function ocrCanvas(file){
   for(let i=0;i<p.length;i+=4){const g=.299*p[i]+.587*p[i+1]+.114*p[i+2];const v=Math.max(0,Math.min(255,(g-128)*1.4+128));p[i]=p[i+1]=p[i+2]=v}
   ctx.putImageData(d,0,0);return c}
 async function handleScanFile(file){
-  scan={img:await compress(file),busy:true,progress:0,status:'글자 인식 준비 중…',text:null,parsed:null};
+  scan={img:await compress(file),file,busy:true,progress:0,status:'준비 중…',text:null,parsed:null,items:null};
   go('scan');
+  if(aiKey()){
+    // AI 분석: 진행 표시는 예상 시간 기준으로 천천히 채움
+    scan.status='✨ AI가 사진 속 업무를 항목별로 정리하는 중…';const t0=Date.now();
+    const timer=setInterval(()=>{scan.progress=Math.min(.95,(Date.now()-t0)/25000);const b=$('#p-scan .progress .bar div');if(b)b.style.width=Math.round(scan.progress*100)+'%'},300);
+    try{
+      const img=(await compress(file,1600,.85)).split(',')[1];
+      scan.items=await aiScan({image:img});
+      if(!scan.items.length)toast('사진에서 업무 항목을 찾지 못했어요');
+      clearInterval(timer);scan.busy=false;if(cur==='scan')render();return;
+    }catch(e){clearInterval(timer);toast(e.message+' · 글자 인식으로 바꿨어요')}
+  }
+  return runOcr(file);
+}
+async function runOcr(file){
+  scan={...scan,file,busy:true,progress:0,status:'글자 인식 준비 중…',text:null,parsed:null,items:null};
+  if(cur==='scan')render();
   const upd=()=>{const b=$('#p-scan .progress');if(b){b.querySelector('b').textContent=scan.status;b.querySelector('.bar div').style.width=Math.round(scan.progress*100)+'%'}};
   ocrProgress=m=>{
     if(m.status==='recognizing text'){scan.status='글자 인식 중…';scan.progress=m.progress}
@@ -602,9 +655,14 @@ async function aiExtract(text){
 시간에 오전/오후가 없고 1~7시면 오후로 봐. "공일공 일이삼사..." 처럼 한글로 읽은 숫자는 전화번호 숫자로 바꿔.
 등록된 빌라 이름: ${state.villas.map(v=>v.name.replace(/\(.*?\)/g,'')).join(', ')||'없음'} — 비슷하게 들리는 이름이면 이 목록의 이름으로 맞춰 줘.
 일정이 여러 개면 jobs 배열에 각각 넣고, 일정이 아닌 말만 있으면 빈 배열을 돌려줘.`;
-  const body={model:'claude-opus-5-5',max_tokens:4000,system,
-    output_config:{effort:'low',format:{type:'json_schema',schema:JOB_SCHEMA}},
-    messages:[{role:'user',content:text}]};
+  const out=await callClaude({system,content:text,schema:JOB_SCHEMA,effort:'low',maxTokens:4000});
+  return (out.jobs||[]).map(x=>({...x,date:/^\d{4}-\d\d-\d\d$/.test(x.date)?x.date:t,time:/^\d\d:\d\d$/.test(x.time)?x.time:''}));
+}
+// Claude 호출 공통: JSON 스키마로 답을 받아 객체로 돌려줌
+async function callClaude({system,content,schema,effort='low',maxTokens=4000}){
+  const body={model:'claude-opus-5-5',max_tokens:maxTokens,system,
+    output_config:{effort,format:{type:'json_schema',schema}},
+    messages:[{role:'user',content}]};
   const call=async fallback=>{
     const headers={'content-type':'application/json','x-api-key':aiKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'};
     if(fallback)headers['anthropic-beta']='server-side-fallback-2026-07-01';
@@ -615,9 +673,47 @@ async function aiExtract(text){
   const j=await res.json().catch(()=>({}));
   if(!res.ok)throw new Error(res.status===401?'AI 키가 올바르지 않아요':(j.error?.message||'AI 요청 실패 ('+res.status+')'));
   if(j.stop_reason==='refusal')throw new Error('AI가 이 내용을 처리하지 못했어요');
+  if(j.stop_reason==='max_tokens')throw new Error('내용이 너무 많아 AI 답이 잘렸어요. 사진을 나눠서 찍어 주세요');
   const txt=(j.content||[]).find(b=>b.type==='text')?.text||'{}';
-  return (JSON.parse(txt).jobs||[]).map(x=>({...x,date:/^\d{4}-\d\d-\d\d$/.test(x.date)?x.date:t,time:/^\d\d:\d\d$/.test(x.time)?x.time:''}));
+  try{return JSON.parse(txt)}catch{throw new Error('AI 답을 읽지 못했어요. 다시 시도해 주세요')}
 }
+
+/* 사진/글 속 여러 업무를 항목별로 뽑기 */
+const SCAN_RULES=`첨부된 이미지에 있는 모든 업무 및 일정 내역을 분석해서, 아래의 규칙에 맞춰 빠짐없이 추출해 줘.
+
+[추출 규칙]
+1. 이미지 속 여러 개의 항목을 각각 개별적인 항목으로 빠짐없이 분리해 주세요.
+2. 각 항목은 다음 형식으로 보기 쉽게 정리해 주세요:
+   - 빌라명:
+   - 호수:
+   - 작업 내용 (날짜, 시간, 특이사항 포함):
+   - 연락처:
+3. 데이터베이스나 일정 관리 프로그램에 한 번에 복사·저장하기 좋도록, 각 항목이 명확히 구분되는 목록 형태로 만들어 주세요.`;
+const SCAN_SCHEMA={type:'object',additionalProperties:false,required:['items'],properties:{items:{type:'array',items:{type:'object',additionalProperties:false,
+  required:['villa','unit','work','title','date','time','contact'],
+  properties:{
+    villa:{type:'string',description:'빌라명. 알 수 없으면 빈 문자열'},
+    unit:{type:'string',description:'호수 (예: 301호, B01호, 공용). 알 수 없으면 빈 문자열'},
+    work:{type:'string',description:'작업 내용 전체 — 날짜, 시간, 특이사항을 모두 포함한 한두 문장'},
+    title:{type:'string',description:'일정 제목용 짧은 작업명 (예: 욕실 누수 점검)'},
+    date:{type:'string',description:'YYYY-MM-DD. 날짜가 적혀 있지 않으면 빈 문자열'},
+    time:{type:'string',description:'HH:MM 24시간제. 시간이 적혀 있지 않으면 빈 문자열'},
+    contact:{type:'string',description:'전화번호 010-0000-0000 형식. 여러 개면 쉼표로. 없으면 빈 문자열'}}}}}};
+async function aiScan({image,text}){
+  const t=todayStr();
+  const system=`너는 빌라 수리·관리 업체의 업무 정리 비서야. 손글씨 메모, 문자 캡처, 게시판, 장부 사진에서 업무를 정확히 읽어내.
+오늘은 ${fmtDate(t,true)}야. "내일", "다음주 화" 같은 표현이나 연도 없는 날짜는 오늘 기준 실제 날짜(YYYY-MM-DD)로 바꿔. 시간에 오전/오후가 없고 1~7시면 오후로 봐.
+등록된 빌라 이름: ${state.villas.map(v=>v.name.replace(/\(.*?\)/g,'')).join(', ')||'없음'} — 글씨가 비슷하면 이 목록의 이름으로 맞춰.
+읽기 어려운 글자는 추측하지 말고 가장 가능성 높은 값을 쓰되 work 끝에 "(확인 필요)"라고 붙여. 업무 항목이 없으면 빈 배열을 돌려줘.`;
+  const content=image
+    ?[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:image}},{type:'text',text:SCAN_RULES}]
+    :[{type:'text',text:SCAN_RULES.replace('첨부된 이미지에','아래 글에')+'\n\n[글]\n'+text}];
+  const out=await callClaude({system,content,schema:SCAN_SCHEMA,effort:'medium',maxTokens:16000});
+  return (out.items||[]).map(x=>({...x,date:/^\d{4}-\d\d-\d\d$/.test(x.date)?x.date:'',time:/^\d\d:\d\d$/.test(x.time)?x.time:''}));
+}
+const itemText=(it,i)=>`[${i+1}]\n- 빌라명: ${it.villa||'-'}\n- 호수: ${it.unit||'-'}\n- 작업 내용: ${it.work||'-'}\n- 연락처: ${it.contact||'-'}`;
+const itemTsv=items=>['빌라명\t호수\t날짜\t시간\t작업 내용\t연락처',...items.map(it=>[it.villa,it.unit,it.date,it.time,it.work,it.contact].map(v=>String(v||'').replace(/[\t\n]/g,' ')).join('\t'))].join('\n');
+const itemToJob=it=>({villa:it.villa,unit:it.unit,date:it.date||todayStr(),time:it.time,title:it.title||it.work.slice(0,30),contact:(it.contact||'').split(',')[0].trim(),memo:it.work});
 // AI 키가 없을 때 쓰는 기본 분석
 function localExtract(text){
   const p=parseText(text);
@@ -696,18 +792,17 @@ function formData(){const f=$('#f');const o={};new FormData(f).forEach((v,k)=>o[
 /* job */
 function jobForm(j={}){
   openSheet(j.id?'일정 수정':'일정 등록',`<form id="f" data-kind="job">
-    ${j.id?'':`<div class="mini-row"><button type="button" class="btn yellow" data-act="voice">${ic('mic',18)} 말로 입력하기</button></div>`}
+    ${j.id?`<div class="mini-row"><button type="button" class="btn ghost" data-act="holdJob" data-id="${j.id}" style="color:#7C3AED">${ic(j.status==='보류'?'cal':'pause',18)} ${j.status==='보류'?'예약으로 되돌리기':'보류하기'}</button><button type="button" class="btn danger" data-act="delJob" data-id="${j.id}">${ic('trash',18)} 삭제</button></div>`:`<div class="mini-row"><button type="button" class="btn yellow" data-act="voice">${ic('mic',18)} 말로 입력하기</button></div>`}
     <div class="row2">${fld('빌라',villaInput(j.villa))}${fld('호수',`<input name="unit" value="${esc(j.unit)}" placeholder="301호 / 공용">`)}</div>
     <div class="row2">${fld('날짜',`<input type="date" name="date" value="${j.date||selDate}">`)}${fld('시간',`<input type="time" name="time" value="${j.time||''}">`)}</div>
     ${fld('작업 내용',`<input name="title" value="${esc(j.title)}" placeholder="예) 욕실 누수 점검">`)}
     ${fld('연락처',`<input name="contact" type="tel" inputmode="tel" value="${esc(j.contact)}" placeholder="010-0000-0000">`)}
     ${fld('메모',`<textarea name="memo" rows="3" placeholder="현관 비번, 준비물 등">${esc(j.memo)}</textarea>`)}
-    ${fld('상태',seg('status',['예약','완료','취소'],j.status||'예약'))}
+    ${fld('상태',seg('status',['예약','보류','완료','취소'],j.status||'예약'))}
     <button type="button" class="btn ghost block" data-act="jobIcs" style="margin-bottom:6px">${ic('bell',18)} 휴대폰 캘린더에 추가 (30분 전 알림)</button>
     <input type="hidden" name="id" value="${j.id||''}"><input type="hidden" name="complaintId" value="${j.complaintId||''}">
   </form>`,
-  `${j.id?`<button class="btn danger" data-act="delJob" data-id="${j.id}" style="flex:0 0 52px">${ic('trash',18)}</button>`:''}
-   <button class="btn ghost" data-act="jobSms">${ic('msg',18)} 문자</button>
+  `   <button class="btn ghost" data-act="jobSms">${ic('msg',18)} 문자</button>
    <button class="btn ghost" data-act="jobBill">${ic('bill',18)} 청구</button>
    <button class="btn primary" data-act="saveJob">저장</button>`);
 }
@@ -882,6 +977,7 @@ const A={
   calToday:()=>{selDate=todayStr();const d=new Date();cal={y:d.getFullYear(),m:d.getMonth()};render()},
   cFilter:el=>{cFilter=el.dataset.s;render()}, bFilter:el=>{bFilter=el.dataset.s;render()},
   saveJob:()=>{if(saveJob()){closeSheet();toast('일정을 저장했어요')}},
+  holdJob:el=>{const j=state.jobs.find(x=>x.id===el.dataset.id);if(!j)return;j.status=j.status==='보류'?'예약':'보류';save();render();jobForm(j);toast(j.status==='보류'?'보류로 바꿨어요. 홈의 "보류 중인 일정"에서 볼 수 있어요':'다시 예약 상태로 바꿨어요')},
   delJob:el=>{if(!confirm('이 일정을 삭제할까요?'))return;state.jobs=state.jobs.filter(j=>j.id!==el.dataset.id);save();closeSheet();render()},
   jobSms:()=>{const j=saveJob();if(j)openSms(jobCtx(j),j.contact)},
   jobBill:()=>{const j=saveJob();if(j)billForm({villa:j.villa,unit:j.unit,phone:j.contact,title:j.title,date:j.date})},
@@ -910,6 +1006,18 @@ const A={
   scanToC:async()=>{const p=scanPrefill();const photos=scan.img?[await putPhoto(scan.img)]:[];cForm({villa:p.villa,unit:p.unit,phone:p.contact,date:todayStr(),title:p.title.replace(/ 점검$/,''),content:p.memo,photos})},
   scanToSms:()=>A.smsTo({dataset:{p:scanPrefill().contact}}),
   scanToBill:()=>{const p=scanPrefill();billForm({villa:p.villa,unit:p.unit,phone:p.contact,title:p.title.replace(/ 점검$/,' 수리'),memo:p.memo})},
+  siJob:el=>jobForm(itemToJob(scan.items[+el.dataset.i])),
+  siC:async el=>{const it=scan.items[+el.dataset.i];const photos=scan.img?[await putPhoto(scan.img)]:[];cForm({villa:it.villa,unit:it.unit,phone:(it.contact||'').split(',')[0].trim(),date:todayStr(),title:it.title,content:it.work,photos})},
+  siSms:el=>{const it=scan.items[+el.dataset.i];openSms({빌라:it.villa,호수:it.unit,날짜:fmtDate(it.date),시간:fmtTime(it.time),작업:it.title},(it.contact||'').split(',')[0].trim())},
+  siSaveAll:()=>{const picked=$$('#p-scan [data-si]').filter(c=>c.checked).map(c=>itemToJob(scan.items[+c.dataset.si]));if(!picked.length){toast('선택한 항목이 없어요');return}
+    if(!confirm(`${picked.length}건을 일정으로 등록할까요?\n(날짜가 없는 항목은 오늘 날짜로 들어가요)`))return;
+    picked.forEach(j=>{ensureVilla(j.villa);state.jobs.push({...j,id:uid(),status:'예약',complaintId:''})});save();
+    selDate=picked[0].date;const d=new Date(selDate+'T00:00');cal={y:d.getFullYear(),m:d.getMonth()};go('schedule');toast(`일정 ${picked.length}건을 등록했어요`)},
+  siCopy:()=>copyText(scan.items.map(itemText).join('\n\n')),
+  siCopyTsv:()=>{copyText(itemTsv(scan.items));setTimeout(()=>toast('엑셀·구글시트 첫 칸에 붙여넣으면 칸이 나뉘어 들어가요'),2300)},
+  scanOcr:()=>scan.file&&runOcr(scan.file),
+  aiText:async()=>{const text=$('#scanText').value.trim();if(!text)return;scan={...scan,text,busy:true,progress:.3,status:'✨ AI가 항목별로 정리하는 중…'};render();
+    try{scan.items=await aiScan({text});scan.text=null}catch(e){toast(e.message)}scan.busy=false;render()},
   voice:()=>openVoice(),
   micToggle:()=>{if(!SR){toast('키보드의 🎤 버튼으로 말해 주세요');$('#voiceText').focus();return}recOn?stopRec():startRec()},
   voiceClear:()=>{stopRec(true);$('#voiceText').value='';updMic()},
