@@ -1,0 +1,12 @@
+{
+  "name": "빌라노트 - 빌라 관리 일정",
+  "short_name": "빌라노트",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1E3A5F",
+  "theme_color": "#1E3A5F",
+  "lang": "ko",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

@@ -1,0 +1,977 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1E3A5F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>빌라노트</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --brand:#1E3A5F; --brand-2:#2B5285; --accent:#FFC933; --accent-soft:#FFF4CC;
+  --bg:#F2F3F5; --card:#fff; --text:#1B1D21; --sub:#6B7280; --line:#E6E8EB;
+  --red:#E5484D; --red-soft:#FDECEC; --orange:#F2711C; --orange-soft:#FFF0E5;
+  --green:#18A058; --green-soft:#E6F6EC; --blue:#2F6FEB; --blue-soft:#E8F0FE; --gray-soft:#EEF0F2;
+  color-scheme:light;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:#DADDE2}
+body{font-family:'Noto Sans KR',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;color:var(--text);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+a{color:inherit;text-decoration:none}
+.ic{flex:none;display:block}
+#app{max-width:480px;margin:0 auto;min-height:100vh;min-height:100dvh;background:var(--bg);position:relative;padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+.page{display:none;padding:0 16px}
+.page.on{display:block}
+
+/* splash */
+#splash{position:fixed;inset:0;z-index:100;background:var(--brand);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .45s ease}
+#splash.hide{opacity:0;pointer-events:none}
+#splash .logo{width:112px;height:112px;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 10px 30px rgba(0,0,0,.25);animation:pop .6s ease}
+#splash .name{color:#fff;font-weight:900;font-size:24px;letter-spacing:-.5px}
+#splash .tag{color:rgba(255,255,255,.7);font-size:13px;margin-top:-12px}
+@keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* home */
+.home-top{display:flex;justify-content:space-between;align-items:flex-start;padding:28px 0 18px}
+.home-top .today{color:var(--sub);font-size:13px;font-weight:500}
+.home-top h1{margin:6px 0 0;font-size:24px;line-height:1.35;font-weight:900;letter-spacing:-.6px;color:var(--brand)}
+.home-top h1 em{font-style:normal;background:linear-gradient(transparent 58%,var(--accent) 58%)}
+.icon-btn{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;color:var(--sub);background:var(--gray-soft)}
+.icon-btn.round{border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.icon-btn.on{background:var(--green);color:#fff}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:#fff;border-radius:18px;padding:14px 12px;text-align:left;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.stat span{display:block;font-size:12px;color:var(--sub)}
+.stat b{display:block;font-size:22px;font-weight:900;margin-top:2px;letter-spacing:-.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat b small{font-size:13px;font-weight:500;margin-left:1px}
+.red{color:var(--red)}.orange{color:var(--orange)}
+.quick{display:flex;gap:6px;overflow-x:auto;padding:22px 0 6px;scrollbar-width:none}
+.quick::-webkit-scrollbar{display:none}
+.q{flex:1 0 64px;display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12.5px;font-weight:500;color:var(--text)}
+.q .circle{width:60px;height:60px;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.06)}
+.banner{display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;margin:18px 0 6px;padding:20px;border-radius:22px;background:var(--accent);text-align:left;box-shadow:0 4px 14px rgba(255,201,51,.35)}
+.banner em{font-style:normal;font-size:11px;font-weight:900;background:var(--brand);color:#fff;border-radius:6px;padding:2px 7px}
+.banner h3{margin:8px 0 4px;font-size:19px;font-weight:900;color:var(--brand);letter-spacing:-.4px}
+.banner p{margin:0;font-size:13px;color:#5b4a12}
+.banner-ic{width:74px;height:74px;border-radius:22px;background:var(--brand);color:var(--accent);display:grid;place-items:center;flex:none;transform:rotate(-6deg)}
+section{margin-top:26px}
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.sec-head h2{margin:0;font-size:18px;font-weight:900;letter-spacing:-.4px}
+.sec-head button{font-size:13px;color:var(--sub)}
+
+/* cards */
+.card{background:#fff;border-radius:18px;padding:14px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,.04);cursor:pointer}
+.job{display:flex;align-items:center;gap:12px}
+.job.done{opacity:.55}
+.job.done .job-title{text-decoration:line-through}
+.job-time{width:62px;flex:none;text-align:center;border-right:1px solid var(--line);padding-right:10px}
+.job-time b{display:block;font-size:14px;font-weight:700;color:var(--brand)}
+.job-time small{display:block;font-size:11px;color:var(--sub)}
+.job-main{flex:1;min-width:0}
+.job-title{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.job-sub{font-size:13px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.job-acts{display:flex;gap:6px}
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;margin-top:4px}
+.b-blue{background:var(--blue-soft);color:var(--blue)}.b-green{background:var(--green-soft);color:var(--green)}
+.b-red{background:var(--red-soft);color:var(--red)}.b-orange{background:var(--orange-soft);color:var(--orange)}
+.b-gray{background:var(--gray-soft);color:var(--sub)}
+.row-between{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.row-between small{color:var(--sub);font-size:12px}
+.cmp,.bill{display:flex;gap:12px;align-items:center}
+.cmp-main,.bill-main{flex:1;min-width:0}
+.thumb{width:62px;height:62px;border-radius:14px;object-fit:cover;flex:none;background:var(--gray-soft)}
+.ph-empty{display:grid;place-items:center;color:#b3b8bf}
+.bill-amt{font-weight:900;font-size:16px;white-space:nowrap}
+.empty{text-align:center;padding:30px 16px;color:var(--sub);background:#fff;border-radius:18px;font-size:14px}
+.empty .btn{margin-top:12px}
+
+/* page head */
+.page-head{display:flex;justify-content:space-between;align-items:center;padding:24px 0 14px}
+.page-head h2{margin:0;font-size:22px;font-weight:900;letter-spacing:-.5px;color:var(--brand)}
+.page-head p{margin:4px 0 0;font-size:13px;color:var(--sub)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:44px;padding:0 16px;border-radius:14px;font-weight:700;font-size:14.5px;white-space:nowrap}
+.btn.sm{height:36px;padding:0 12px;font-size:13.5px;border-radius:12px}
+.btn.primary{background:var(--brand);color:#fff}
+.btn.yellow{background:var(--accent);color:var(--brand)}
+.btn.ghost{background:var(--gray-soft);color:var(--text)}
+.btn.danger{background:var(--red-soft);color:var(--red)}
+.btn.block{width:100%}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{height:34px;padding:0 14px;border-radius:20px;background:#fff;border:1px solid var(--line);font-size:13.5px;font-weight:500;color:var(--sub)}
+.chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.chip b{margin-left:3px}
+
+/* calendar */
+.cal{background:#fff;border-radius:20px;padding:14px 12px 10px}
+.cal-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.cal-nav b{font-size:17px;font-weight:900}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.cal-grid .wd{font-size:12px;color:var(--sub);padding:4px 0}
+.day{height:44px;border-radius:12px;font-size:14px;font-weight:500;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.day i{font-style:normal;font-size:10px;font-weight:700;background:var(--accent);color:var(--brand);border-radius:8px;min-width:16px;padding:0 4px;line-height:15px;margin-top:1px}
+.day.sun,.wd.sun{color:var(--red)}.day.sat,.wd.sat{color:var(--blue)}
+.day.today{box-shadow:inset 0 0 0 1.5px var(--brand)}
+.day.sel{background:var(--brand);color:#fff}
+.day.sel i{background:#fff}
+
+/* scan */
+.scan-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.big-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;height:120px;border-radius:22px;background:#fff;font-weight:700;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.big-btn.yellow{background:var(--accent);color:var(--brand)}
+.link-btn{display:block;margin:14px auto 0;color:var(--sub);font-size:13.5px;text-decoration:underline;text-underline-offset:3px}
+.scan-preview{display:block;width:100%;max-height:300px;object-fit:contain;background:#111;border-radius:18px;margin-top:16px}
+.progress{margin-top:14px;background:#fff;border-radius:16px;padding:14px}
+.progress .bar{height:8px;background:var(--gray-soft);border-radius:8px;overflow:hidden;margin-top:8px}
+.progress .bar div{height:100%;background:var(--brand);border-radius:8px;transition:width .2s}
+.result textarea{min-height:150px}
+.det{background:#fff;border-radius:18px;padding:6px 14px;margin-top:12px}
+.det-row{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+.det-row:last-child{border-bottom:0}
+.det-k{width:62px;flex:none;font-size:13px;color:var(--sub);padding-top:5px}
+.det-v{flex:1;display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.det-none{font-size:13px;color:#b3b8bf;padding-top:5px}
+.tag{display:inline-flex;align-items:center;gap:4px;height:30px;padding:0 10px;border-radius:10px;background:var(--blue-soft);color:var(--blue);font-size:13.5px;font-weight:700}
+.phone-tag{display:inline-flex;align-items:center;gap:2px;background:var(--accent-soft);border-radius:12px;padding:3px 3px 3px 10px;font-weight:700;font-size:14px}
+.phone-tag .mini{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:var(--brand)}
+.phone-tag .mini:active{background:rgba(0,0,0,.06)}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+
+/* forms / sheet */
+.sheet-wrap{position:fixed;inset:0;z-index:50;display:none}
+.sheet-wrap.on{display:block}
+.sheet-bg{position:absolute;inset:0;background:rgba(15,20,30,.45);animation:fade .2s}
+.sheet{position:absolute;left:0;right:0;bottom:0;margin:0 auto;max-width:480px;max-height:92vh;max-height:92dvh;background:#fff;border-radius:24px 24px 0 0;display:flex;flex-direction:column;animation:up .25s ease}
+@keyframes up{from{transform:translateY(40px);opacity:.5}to{transform:none;opacity:1}}
+@keyframes fade{from{opacity:0}}
+.sheet-head{display:flex;justify-content:space-between;align-items:center;padding:16px 16px 8px}
+.sheet-head b{font-size:18px;font-weight:900}
+.sheet-body{overflow-y:auto;padding:6px 16px 16px;flex:1;-webkit-overflow-scrolling:touch}
+.sheet-foot{display:flex;gap:8px;padding:10px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+.sheet-foot:empty{display:none}
+.sheet-foot .btn{flex:1;padding:0 10px}
+.fld{display:block;margin-bottom:14px;min-width:0}
+.fl,.fld>span{display:block;font-size:13px;font-weight:700;color:var(--sub);margin-bottom:6px}
+.fld input,.fld select,.fld textarea,.result textarea{width:100%;border:1px solid var(--line);background:#F8F9FA;border-radius:12px;padding:11px 12px;font-size:16px;outline:none}
+.fld input:focus,.fld select:focus,.fld textarea:focus,.result textarea:focus{border-color:var(--brand);background:#fff}
+.fld textarea,.result textarea{resize:vertical;line-height:1.5}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:flex;background:var(--gray-soft);border-radius:12px;padding:3px}
+.seg label{flex:1}
+.seg input{display:none}
+.seg span{display:block;text-align:center;padding:9px 0;border-radius:10px;font-size:14px;font-weight:700;color:var(--sub);cursor:pointer}
+.seg input:checked+span{background:#fff;color:var(--brand);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.photos{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.ph{position:relative;width:78px;height:78px;flex:none;border-radius:14px;overflow:hidden;background:var(--gray-soft)}
+.ph img{width:100%;height:100%;object-fit:cover;cursor:zoom-in}
+.ph button{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font-size:14px;line-height:22px}
+.ph.add{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--sub);font-size:12px;border:1.5px dashed #c9ced4;background:#fafbfc;cursor:pointer}
+.hint{font-size:12.5px;color:var(--sub);margin:-6px 0 12px}
+.item{display:grid;grid-template-columns:1fr 54px 92px 32px;gap:6px;margin-bottom:6px;align-items:center}
+.item input{width:100%;border:1px solid var(--line);background:#F8F9FA;border-radius:10px;padding:9px 8px;font-size:15px;min-width:0}
+.item-head{display:grid;grid-template-columns:1fr 54px 92px 32px;gap:6px;font-size:12px;color:var(--sub);margin-bottom:4px;padding-left:4px}
+.total{background:var(--brand);color:#fff;border-radius:16px;padding:14px 16px;margin:12px 0 16px}
+.total .r{display:flex;justify-content:space-between;font-size:13px;opacity:.8}
+.total .r.big{font-size:20px;font-weight:900;opacity:1;margin-top:4px}
+.check{display:flex;align-items:center;gap:8px;font-size:14px;margin:8px 0}
+.check input{width:18px;height:18px;accent-color:var(--brand)}
+.list-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.list-row .t{font-weight:700}
+.list-row .s{font-size:12.5px;color:var(--sub)}
+.set-group{margin-bottom:22px}
+.set-group h4{margin:0 0 10px;font-size:15px;font-weight:900}
+.sum-card{background:var(--brand);color:#fff;border-radius:20px;padding:16px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.sum-card span{display:block;font-size:12px;opacity:.75}
+.sum-card b{font-size:16px;font-weight:900;white-space:nowrap}
+.sum-card .hl{color:var(--accent)}
+
+/* nav */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:40;max-width:480px;margin:0 auto;background:#fff;border-radius:22px 22px 0 0;box-shadow:0 -2px 16px rgba(0,0,0,.07);display:grid;grid-template-columns:repeat(5,1fr);padding:8px 4px calc(8px + env(safe-area-inset-bottom))}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11.5px;color:#9AA0A8;font-weight:500;padding-top:4px}
+.nav button.on{color:var(--text);font-weight:700}
+.nav .m{width:60px;height:60px;border-radius:20px;background:var(--accent);color:var(--brand);display:grid;place-items:center;margin-top:-30px;box-shadow:0 6px 16px rgba(255,190,20,.45);border:4px solid #fff;transform:rotate(-4deg)}
+.nav .m .ic{transform:rotate(4deg)}
+.nav .center{gap:2px;padding-top:0}
+
+/* voice */
+.voice-banner{display:flex;width:100%;align-items:center;gap:14px;margin:10px 0 0;padding:16px 18px;border-radius:22px;background:var(--brand);color:#fff;text-align:left}
+.voice-banner .vb-ic{width:52px;height:52px;border-radius:50%;background:var(--accent);color:var(--brand);display:grid;place-items:center;flex:none}
+.voice-banner b{display:block;font-size:17px;font-weight:900}
+.voice-banner span{font-size:12.5px;opacity:.75}
+.voice{text-align:center;padding:8px 0 4px}
+.mic{width:104px;height:104px;border-radius:50%;background:var(--accent);color:var(--brand);display:inline-grid;place-items:center;box-shadow:0 8px 22px rgba(255,190,20,.45);position:relative}
+.mic.on{background:var(--red);color:#fff;box-shadow:0 0 0 0 rgba(229,72,77,.5);animation:pulse 1.4s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(229,72,77,.5)}70%{box-shadow:0 0 0 22px rgba(229,72,77,0)}100%{box-shadow:0 0 0 0 rgba(229,72,77,0)}}
+#micState{margin:14px 0 4px;font-weight:700;font-size:15px}
+.voice .hint{margin:4px 0 14px}
+.ai-note{display:flex;align-items:center;gap:6px;justify-content:center;font-size:12.5px;color:var(--sub);margin-top:10px}
+.ai-note.on{color:#7C3AED;font-weight:700}
+.vjob{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:14px;margin-bottom:8px}
+.vjob input{width:20px;height:20px;margin-top:2px;accent-color:var(--brand);flex:none}
+.vjob .s{font-size:13px;color:var(--sub)}
+.spin{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:rot .8s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+.mini-row{display:flex;gap:8px;margin-bottom:14px}
+.mini-row .btn{flex:1}
+
+#toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:rgba(20,24,30,.92);color:#fff;padding:11px 18px;border-radius:14px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:200;max-width:88vw;text-align:center}
+#toast.on{opacity:1;transform:translateX(-50%)}
+#viewer{position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center}
+#viewer.on{display:flex}
+#viewer img{max-width:100%;max-height:100%;object-fit:contain}
+</style>
+</head>
+<body>
+<div id="splash">
+  <div class="logo"><svg width="64" height="64" viewBox="0 0 512 512"><path d="M256 112 104 232v168h104v-96h96v96h104V232z" fill="#1E3A5F"/><rect x="232" y="232" width="48" height="40" rx="6" fill="#FFC933"/></svg></div>
+  <div class="name">빌라노트</div>
+  <div class="tag">빌라 수리 · 민원 · 청구를 한 곳에서</div>
+</div>
+
+<div id="app">
+  <main>
+    <div class="page" id="p-home"></div>
+    <div class="page" id="p-schedule"></div>
+    <div class="page" id="p-scan"></div>
+    <div class="page" id="p-complaints"></div>
+    <div class="page" id="p-bills"></div>
+  </main>
+  <nav class="nav" id="nav"></nav>
+</div>
+
+<div class="sheet-wrap" id="sheet">
+  <div class="sheet-bg" data-act="closeSheet"></div>
+  <div class="sheet">
+    <div class="sheet-head"><b id="sheetTitle"></b><button class="icon-btn" data-act="closeSheet" aria-label="닫기"></button></div>
+    <div class="sheet-body" id="sheetBody"></div>
+    <div class="sheet-foot" id="sheetFoot"></div>
+  </div>
+</div>
+<div id="viewer" data-act="closeViewer"><img alt=""></div>
+<div id="toast"></div>
+
+<script>
+/* ---------- helpers ---------- */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const todayStr=()=>ymd(new Date());
+const addDays=(s,n)=>{const d=new Date(s+'T00:00');d.setDate(d.getDate()+n);return ymd(d)};
+const WD=['일','월','화','수','목','금','토'];
+function fmtDate(s,full){if(!s)return '';const d=new Date(s+'T00:00');const base=`${d.getMonth()+1}월 ${d.getDate()}일 (${WD[d.getDay()]})`;return full?`${d.getFullYear()}년 ${base}`:base}
+function fmtTime(t){if(!t)return '';const[h,m]=t.split(':').map(Number);const ap=h<12?'오전':'오후';const hh=h%12||12;return `${ap} ${hh}시${m?` ${m}분`:''}`}
+function fmtTimeShort(t){if(!t)return '시간 미정';const[h,m]=t.split(':').map(Number);return `${h<12?'오전':'오후'} ${h%12||12}:${pad(m)}`}
+const won=n=>(Math.round(n)||0).toLocaleString('ko-KR')+'원';
+const shortWon=n=>n>=10000?(n/10000).toFixed(n%10000?1:0).replace(/\.0$/,'')+'만원':won(n);
+const tel=p=>String(p||'').replace(/[^\d+]/g,'');
+const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent);
+
+const IC={
+  home:'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  cam:'<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/>',
+  alert:'<path d="M3 10v4a1 1 0 0 0 1 1h3l6 4V5L7 9H4a1 1 0 0 0-1 1z"/><path d="M17 8a5 5 0 0 1 0 8"/>',
+  bill:'<path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  phone:'<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>',
+  msg:'<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>',
+  check:'<path d="M5 12l5 5L20 7"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  building:'<rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1M10 21v-3h4v3"/>',
+  text:'<path d="M4 7V5h16v2M9 19h6M12 5v14"/>',
+  copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a1 1 0 0 1 1-1h10"/>',
+  chevL:'<path d="M15 6l-6 6 6 6"/>',chevR:'<path d="M9 6l6 6-6 6"/>',
+  x:'<path d="M6 6l12 12M18 6L6 18"/>',
+  img:'<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>',
+  trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+  share:'<path d="M12 3v12M7 8l5-5 5 5M5 14v6h14v-6"/>',
+  edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',
+  mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+  spark:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/>',
+  bell:'<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/>',
+};
+const ic=(n,s=22)=>`<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${IC[n]}</svg>`;
+
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),2200)}
+async function copyText(s){try{await navigator.clipboard.writeText(s)}catch{const ta=document.createElement('textarea');ta.value=s;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove()}toast('복사했어요')}
+function openSmsApp(phone,body){location.href=`sms:${tel(phone)}${isIOS?'&':'?'}body=${encodeURIComponent(body)}`}
+
+/* ---------- storage (IndexedDB, localStorage fallback) ---------- */
+let db=null;
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open('villanote',1);r.onupgradeneeded=()=>{r.result.createObjectStore('kv');r.result.createObjectStore('photos')};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+function idb(store,mode,fn){return new Promise((res,rej)=>{const t=db.transaction(store,mode);const req=fn(t.objectStore(store));t.oncomplete=()=>res(req&&req.result);t.onerror=()=>rej(t.error)})}
+const photoCache=new Map();
+async function putPhoto(dataUrl){const id='ph_'+uid();photoCache.set(id,dataUrl);if(db)await idb('photos','readwrite',s=>s.put(dataUrl,id));return id}
+async function getPhoto(id){if(photoCache.has(id))return photoCache.get(id);if(!db)return '';const v=await idb('photos','readonly',s=>s.get(id));if(v)photoCache.set(id,v);return v||''}
+async function save(){try{if(db)await idb('kv','readwrite',s=>s.put(state,'state'));else localStorage.setItem('villanote',JSON.stringify(state))}catch(e){toast('저장 실패: '+e.message)}}
+async function load(){try{db=await openDB()}catch{db=null}
+  try{return db?await idb('kv','readonly',s=>s.get('state')):JSON.parse(localStorage.getItem('villanote')||'null')}catch{return null}}
+async function hydrate(root=document){for(const img of $$('img[data-photo]:not([src])',root)){img.src=await getPhoto(img.dataset.photo)}}
+
+/* ---------- state ---------- */
+const DEFAULT_TPL=[
+  {name:'방문 예약 안내',body:'안녕하세요, {업체}입니다.\n{빌라} {호수} {작업} 건으로 {날짜} {시간}에 방문 예정입니다.\n일정 변경이 필요하시면 연락 부탁드립니다.\n☎ {연락처}'},
+  {name:'도착 전 연락',body:'안녕하세요, {업체}입니다.\n{빌라} {호수} 방문 위해 약 10분 후 도착 예정입니다.'},
+  {name:'민원 접수 확인',body:'안녕하세요, {업체}입니다.\n{빌라} {호수} {작업} 민원이 접수되었습니다.\n확인 후 방문 일정 안내드리겠습니다.'},
+  {name:'작업 완료 안내',body:'{빌라} {호수} {작업} 작업이 완료되었습니다.\n이용에 불편을 드려 죄송합니다. 감사합니다.\n- {업체}'},
+];
+let state;
+function seed(){
+  const t=todayStr(),v1=uid(),v2=uid();
+  return {
+    villas:[{id:v1,name:'하늘빌라(샘플)',address:'OO구 OO로 12',units:'12세대',owner:'',memo:'공동현관 비번 관리실 문의'},{id:v2,name:'햇살빌라(샘플)',address:'OO구 OO길 34',units:'8세대',owner:'',memo:''}],
+    jobs:[
+      {id:uid(),villa:"하늘빌라(샘플)",unit:'201호',date:t,time:'10:00',title:'욕실 누수 점검',contact:'010-1234-5678',memo:'아래층 천장 얼룩',status:'예약'},
+      {id:uid(),villa:"햇살빌라(샘플)",unit:'공용',date:t,time:'14:30',title:'복도 전등 교체',contact:'',memo:'LED 등 2개',status:'예약'},
+      {id:uid(),villa:"하늘빌라(샘플)",unit:'302호',date:addDays(t,2),time:'11:00',title:'보일러 점검',contact:'010-2222-3333',memo:'',status:'예약'},
+    ],
+    complaints:[{id:uid(),villa:"햇살빌라(샘플)",unit:'302호',date:t,reporter:'세입자',phone:'010-9876-5432',title:'보일러 온수 안 나옴',content:'어제 저녁부터 온수가 안 나온다고 연락 옴',status:'접수',photos:[]}],
+    bills:[{id:uid(),villa:"하늘빌라(샘플)",unit:'201호',date:addDays(t,-3),to:'건물주',phone:'',title:'누수 배관 교체',items:[{name:'배관 부품',qty:1,price:35000},{name:'인건비',qty:1,price:80000}],vat:false,memo:'',status:'청구',photos:[]}],
+    settings:{bizName:'빌라노트',myPhone:'',account:'',templates:DEFAULT_TPL.map(x=>({...x}))},
+  };
+}
+// 빌라 목록에 없는 이름이면 자동으로 추가 (자동완성 목록용)
+function ensureVilla(name){name=(name||'').trim();if(name&&!state.villas.some(v=>v.name===name))state.villas.push({id:uid(),name,address:'',units:'',owner:'',memo:''})}
+const byDT=(a,b)=>(a.date+(a.time||'99')).localeCompare(b.date+(b.time||'99'));
+const jobsOn=d=>state.jobs.filter(j=>j.date===d).sort(byDT);
+function billSum(b){const sub=(b.items||[]).reduce((s,i)=>s+(+i.qty||0)*(+i.price||0),0);const vat=b.vat?Math.round(sub*.1):0;return{sub,vat,total:sub+vat}}
+const BADGE={'예약':'b-blue','완료':'b-green','취소':'b-gray','접수':'b-red','처리중':'b-orange','미청구':'b-gray','청구':'b-orange','입금완료':'b-green'};
+const badge=s=>`<span class="badge ${BADGE[s]||'b-gray'}">${esc(s)}</span>`;
+
+/* ---------- navigation ---------- */
+let cur='home';
+const NAV=[['home','home','홈'],['schedule','cal','일정'],['scan','cam','사진인식'],['complaints','alert','민원'],['bills','bill','청구']];
+function renderNav(){$('#nav').innerHTML=NAV.map(([p,i,l])=>p==='scan'
+  ?`<button class="center" data-act="go" data-p="scan"><span class="m">${ic('cam',28)}</span>${l}</button>`
+  :`<button data-act="go" data-p="${p}">${ic(i,24)}${l}</button>`).join('')}
+function render(){
+  ({home:renderHome,schedule:renderSchedule,scan:renderScan,complaints:renderComplaints,bills:renderBills})[cur]();
+  $$('.page').forEach(p=>p.classList.toggle('on',p.id==='p-'+cur));
+  $$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.p===cur));
+  hydrate();
+}
+function go(p){cur=p;render();window.scrollTo(0,0)}
+
+/* ---------- cards ---------- */
+const empty=(msg,act,label)=>`<div class="empty">${msg}${act?`<br><button class="btn sm primary" data-act="${act}">${ic('plus',16)} ${label}</button>`:''}</div>`;
+function jobCard(j,showDate){
+  return `<div class="card job ${j.status!=='예약'?'done':''}" data-act="editJob" data-id="${j.id}">
+    <div class="job-time">${showDate?`<small>${fmtDate(j.date).replace(/ \(.\)/,'')}</small>`:''}<b>${fmtTimeShort(j.time)}</b></div>
+    <div class="job-main"><div class="job-title">${esc(j.title)}</div><div class="job-sub">${esc((j.villa||""))} ${esc(j.unit)}</div>${badge(j.status)}</div>
+    <div class="job-acts">${j.contact?`<a class="icon-btn" href="tel:${tel(j.contact)}" aria-label="전화">${ic('phone',18)}</a><button class="icon-btn" data-act="smsJob" data-id="${j.id}" aria-label="문자">${ic('msg',18)}</button>`:''}
+    <button class="icon-btn ${j.status==='완료'?'on':''}" data-act="toggleJob" data-id="${j.id}" aria-label="완료">${ic('check',18)}</button></div>
+  </div>`}
+function cCard(c){
+  return `<div class="card cmp" data-act="editC" data-id="${c.id}">
+    ${c.photos?.[0]?`<img class="thumb" data-photo="${c.photos[0]}" alt="">`:`<div class="thumb ph-empty">${ic('alert',24)}</div>`}
+    <div class="cmp-main"><div class="row-between">${badge(c.status)}<small>${fmtDate(c.date)}</small></div>
+    <div class="job-title">${esc(c.title)}</div><div class="job-sub">${esc((c.villa||""))} ${esc(c.unit)}${c.reporter?' · '+esc(c.reporter):''}</div></div>
+  </div>`}
+function bCard(b){
+  return `<div class="card bill" data-act="editBill" data-id="${b.id}">
+    <div class="bill-main"><div class="row-between">${badge(b.status)}<small>${fmtDate(b.date)}</small></div>
+    <div class="job-title">${esc(b.title)}</div><div class="job-sub">${esc((b.villa||""))} ${esc(b.unit)}${b.to?' · '+esc(b.to):''}</div></div>
+    <div class="bill-amt">${won(billSum(b).total)}</div>
+  </div>`}
+
+/* ---------- pages ---------- */
+function renderHome(){
+  const t=todayStr(),todays=jobsOn(t),left=todays.filter(j=>j.status==='예약').length;
+  const openC=state.complaints.filter(c=>c.status!=='완료').sort((a,b)=>b.date.localeCompare(a.date));
+  const unpaid=state.bills.filter(b=>b.status!=='입금완료').reduce((s,b)=>s+billSum(b).total,0);
+  const upcoming=state.jobs.filter(j=>j.date>t&&j.date<=addDays(t,7)&&j.status==='예약').sort(byDT).slice(0,5);
+  const q=(act,icon,label,color)=>`<button class="q" data-act="${act}"><span class="circle" style="color:${color}">${ic(icon,26)}</span>${label}</button>`;
+  $('#p-home').innerHTML=`
+  <div class="home-top">
+    <div><div class="today">${fmtDate(t,true)}</div>
+    <h1>${esc(state.settings.bizName)}님,<br>${left?`<em>오늘 일정 ${left}건</em> 남았어요`:'<em>오늘 일정 모두 끝!</em>'}</h1></div>
+    <button class="icon-btn round" data-act="settings" aria-label="설정">${ic('gear')}</button>
+  </div>
+  <div class="stats">
+    <button class="stat" data-act="go" data-p="schedule"><span>오늘 일정</span><b>${todays.length}<small>건</small></b></button>
+    <button class="stat" data-act="go" data-p="complaints"><span>미처리 민원</span><b class="red">${openC.length}<small>건</small></b></button>
+    <button class="stat" data-act="go" data-p="bills"><span>미수금</span><b class="orange">${shortWon(unpaid)}</b></button>
+  </div>
+  <div class="quick">
+    ${q('newJob','cal','일정 등록','var(--blue)')}${q('newC','alert','민원 접수','var(--red)')}${q('newBill','bill','수리비 청구','var(--orange)')}${q('goScan','text','사진→글자','var(--brand)')}${q('villas','building','빌라 관리','var(--green)')}
+  </div>
+  <button class="banner" data-act="goScan">
+    <div><em>자동 인식</em><h3>사진 한 장이면 끝!</h3><p>메모·문자 캡처를 찍으면 전화번호·<br>날짜·시간·호수를 자동으로 찾아요</p></div>
+    <div class="banner-ic">${ic('cam',38)}</div>
+  </button>
+  <button class="voice-banner" data-act="voice"><span class="vb-ic">${ic('mic',28)}</span><div><b>말로 일정 등록</b><span>"내일 2시 하늘빌라 301호 누수 점검" 처럼 말하면 끝</span></div></button>
+  <section><div class="sec-head"><h2>오늘 일정</h2><button data-act="go" data-p="schedule">전체보기 ›</button></div>
+    ${todays.length?todays.map(j=>jobCard(j)).join(''):empty('오늘 잡힌 일정이 없어요','newJob','일정 등록')}</section>
+  ${upcoming.length?`<section><div class="sec-head"><h2>다가오는 일정</h2></div>${upcoming.map(j=>jobCard(j,true)).join('')}</section>`:''}
+  ${openC.length?`<section><div class="sec-head"><h2>처리할 민원</h2><button data-act="go" data-p="complaints">전체보기 ›</button></div>${openC.slice(0,3).map(cCard).join('')}</section>`:''}`;
+}
+
+let selDate=todayStr(),cal={y:new Date().getFullYear(),m:new Date().getMonth()};
+function renderSchedule(){
+  const{y,m}=cal,first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate(),t=todayStr();
+  let cells=WD.map((w,i)=>`<div class="wd ${i===0?'sun':i===6?'sat':''}">${w}</div>`).join('');
+  for(let i=0;i<first;i++)cells+='<div></div>';
+  for(let d=1;d<=days;d++){
+    const ds=`${y}-${pad(m+1)}-${pad(d)}`,n=state.jobs.filter(j=>j.date===ds&&j.status==='예약').length,wd=(first+d-1)%7;
+    cells+=`<button class="day ${wd===0?'sun':wd===6?'sat':''} ${ds===t?'today':''} ${ds===selDate?'sel':''}" data-act="pickDay" data-d="${ds}">${d}${n?`<i>${n}</i>`:''}</button>`;
+  }
+  const list=jobsOn(selDate);
+  $('#p-schedule').innerHTML=`
+  <div class="page-head"><div><h2>일정 관리</h2><p>예약된 방문·수리 일정</p></div><div style="display:flex;gap:6px"><button class="btn sm yellow" data-act="voice">${ic('mic',16)} 말로</button><button class="btn sm primary" data-act="newJob">${ic('plus',16)} 일정</button></div></div>
+  <div class="cal">
+    <div class="cal-nav"><button class="icon-btn" data-act="calMove" data-n="-1">${ic('chevL',18)}</button><b>${y}년 ${m+1}월</b><button class="icon-btn" data-act="calMove" data-n="1">${ic('chevR',18)}</button></div>
+    <div class="cal-grid">${cells}</div>
+  </div>
+  <section><div class="sec-head"><h2>${fmtDate(selDate)}</h2><button data-act="calToday">오늘로</button></div>
+  ${list.length?list.map(j=>jobCard(j)).join(''):empty('이 날은 일정이 없어요','newJob','일정 등록')}</section>`;
+}
+
+let cFilter='전체';
+function renderComplaints(){
+  const all=state.complaints.slice().sort((a,b)=>b.date.localeCompare(a.date));
+  const list=cFilter==='전체'?all:all.filter(c=>c.status===cFilter);
+  $('#p-complaints').innerHTML=`
+  <div class="page-head"><div><h2>민원 처리</h2><p>세대·공용 민원 접수와 처리 현황</p></div><button class="btn sm primary" data-act="newC">${ic('plus',16)} 접수</button></div>
+  <div class="chips" style="margin-bottom:14px">${['전체','접수','처리중','완료'].map(s=>`<button class="chip ${cFilter===s?'on':''}" data-act="cFilter" data-s="${s}">${s}<b>${s==='전체'?all.length:all.filter(c=>c.status===s).length}</b></button>`).join('')}</div>
+  ${list.length?list.map(cCard).join(''):empty('해당 민원이 없어요','newC','민원 접수')}`;
+}
+
+let bFilter='전체';
+function renderBills(){
+  const all=state.bills.slice().sort((a,b)=>b.date.localeCompare(a.date));
+  const list=bFilter==='전체'?all:all.filter(b=>b.status===bFilter);
+  const sumBy=s=>all.filter(b=>b.status===s).reduce((a,b)=>a+billSum(b).total,0);
+  const mon=todayStr().slice(0,7),paidMon=all.filter(b=>b.status==='입금완료'&&b.date.startsWith(mon)).reduce((a,b)=>a+billSum(b).total,0);
+  $('#p-bills').innerHTML=`
+  <div class="page-head"><div><h2>수리비 청구</h2><p>청구서 작성 · 문자 발송 · 입금 확인</p></div><button class="btn sm primary" data-act="newBill">${ic('plus',16)} 청구서</button></div>
+  <div class="sum-card"><div><span>청구 후 미입금</span><b class="hl">${shortWon(sumBy('청구'))}</b></div><div><span>미청구</span><b>${shortWon(sumBy('미청구'))}</b></div><div><span>이번 달 입금</span><b>${shortWon(paidMon)}</b></div></div>
+  <div class="chips" style="margin-bottom:14px">${['전체','미청구','청구','입금완료'].map(s=>`<button class="chip ${bFilter===s?'on':''}" data-act="bFilter" data-s="${s}">${s}<b>${s==='전체'?all.length:all.filter(b=>b.status===s).length}</b></button>`).join('')}</div>
+  ${list.length?list.map(bCard).join(''):empty('해당 청구서가 없어요','newBill','청구서 작성')}`;
+}
+
+/* ---------- OCR / scan ---------- */
+let scan={img:null,busy:false,progress:0,status:'',text:null,parsed:null};
+function renderScan(){
+  $('#p-scan').innerHTML=`
+  <div class="page-head"><div><h2>사진 → 글자 변환</h2><p>메모지·문자 캡처·게시판 사진을 찍으면<br>글자와 전화번호·날짜를 자동으로 찾아드려요</p></div></div>
+  <div class="scan-btns">
+    <label class="big-btn yellow">${ic('cam',34)}카메라로 찍기<input type="file" accept="image/*" capture="environment" hidden data-scan></label>
+    <label class="big-btn">${ic('img',34)}앨범에서 선택<input type="file" accept="image/*" hidden data-scan></label>
+  </div>
+  <button class="link-btn" data-act="pasteMode">사진 대신 받은 문자 내용 붙여넣기</button>
+  ${scan.img?`<img class="scan-preview" src="${scan.img}" data-act="viewSrc" alt="">`:''}
+  ${scan.busy?`<div class="progress"><b>${esc(scan.status)}</b><div class="bar"><div style="width:${Math.round(scan.progress*100)}%"></div></div></div>`:''}
+  ${scan.text!==null&&!scan.busy?`
+  <section class="result">
+    <div class="sec-head"><h2>인식된 글자</h2><button data-act="copyScan">복사</button></div>
+    <textarea id="scanText" placeholder="여기에 글자가 표시됩니다. 틀린 부분은 직접 고칠 수 있어요.">${esc(scan.text)}</textarea>
+    <div class="det" id="scanDet">${detHTML()}</div>
+    <div class="actions">
+      <button class="btn primary" data-act="scanToJob">${ic('cal',18)} 일정 등록</button>
+      <button class="btn primary" data-act="scanToC">${ic('alert',18)} 민원 등록</button>
+      <button class="btn yellow" data-act="scanToSms">${ic('msg',18)} 안내 문자</button>
+      <button class="btn ghost" data-act="scanToBill">${ic('bill',18)} 청구서</button>
+    </div>
+  </section>`:''}`;
+}
+function detHTML(){
+  const p=scan.parsed=parseText(scan.text||'');
+  const row=(k,v)=>`<div class="det-row"><div class="det-k">${k}</div><div class="det-v">${v||'<span class="det-none">못 찾음</span>'}</div></div>`;
+  return row('전화번호',p.phones.map(ph=>`<span class="phone-tag">${ph}<a class="mini" href="tel:${tel(ph)}" aria-label="전화">${ic('phone',16)}</a><button class="mini" data-act="smsTo" data-p="${ph}" aria-label="문자">${ic('msg',16)}</button><button class="mini" data-act="copy" data-t="${ph}" aria-label="복사">${ic('copy',16)}</button></span>`).join(''))
+   +row('날짜',p.dates.map(d=>`<span class="tag">${fmtDate(d)}</span>`).join(''))
+   +row('시간',p.times.map(t=>`<span class="tag">${fmtTime(t)}</span>`).join(''))
+   +row('빌라',p.villas.map(n=>`<span class="tag">${esc(n)}</span>`).join(''))
+   +row('호수',p.units.map(u=>`<span class="tag">${esc(u)}</span>`).join(''))
+   +row('내용',p.keywords.map(k=>`<span class="tag">${esc(k)}</span>`).join(''));
+}
+const KEYWORDS=['누수','물샘','보일러','온수','배관','막힘','하수구','역류','변기','세면대','싱크대','수도','동파','전기','누전','차단기','전등','조명','콘센트','도어락','현관문','방수','곰팡이','결로','창문','샷시','방충망','타일','도배','장판','인터폰','계단','옥상','주차','소음','청소','쓰레기','환풍기','가스','에어컨','배수','외벽','균열','CCTV'];
+function parseText(raw){
+  const today=new Date(),Y=today.getFullYear();
+  const add=(a,v)=>{if(!a.includes(v))a.push(v)};
+  let m;
+  // OCR에서 숫자 사이의 O/o/l/I 를 0/1 로 보정
+  const t=String(raw).replace(/(?<=\d)[Oo]|[Oo](?=\d)/g,'0').replace(/(?<=\d)[lI|]|[lI|](?=\d)/g,'1');
+  const phones=[];
+  const rP=/(?<!\d)(01[016789]|0[2-6]\d?|070|050\d?)[\s\-.)]{0,3}(\d{3,4})[\s\-.]{0,3}(\d{4})(?!\d)/g;
+  const rP2=/(?<![\d-])(1[5-9]\d{2})[\s\-.]?(\d{4})(?![\d-])/g;
+  while((m=rP.exec(t)))add(phones,`${m[1]}-${m[2]}-${m[3]}`);
+  while((m=rP2.exec(t)))add(phones,`${m[1]}-${m[2]}`);
+  const t2=t.replace(rP,' ').replace(rP2,' ');
+  const dates=[];
+  const pushD=(y,mo,d)=>{mo=+mo;d=+d;if(mo<1||mo>12||d<1||d>31)return;
+    if(!y){y=Y;if(new Date(y,mo-1,d)<new Date(Y,today.getMonth(),today.getDate()-60))y++}else{y=+y;if(y<100)y+=2000}
+    add(dates,`${y}-${pad(mo)}-${pad(d)}`)};
+  const rD1=/(?<!\d)(20\d{2}|\d{2})\s*[.\-/년]\s*(\d{1,2})\s*[.\-/월]\s*(\d{1,2})(?!\d)/g;
+  const rD2=/(?<!\d)(\d{1,2})\s*월\s*(\d{1,2})\s*일/g;
+  const rD3=/(?<![\d./-])(\d{1,2})\s*\/\s*(\d{1,2})(?![\d/])/g;
+  while((m=rD1.exec(t2)))pushD(m[1],m[2],m[3]);
+  while((m=rD2.exec(t2)))pushD(0,m[1],m[2]);
+  while((m=rD3.exec(t2)))pushD(0,m[1],m[2]);
+  const ts=todayStr();
+  if(/오늘/.test(t2))add(dates,ts);
+  if(/내일/.test(t2))add(dates,addDays(ts,1));
+  if(/모레/.test(t2))add(dates,addDays(ts,2));
+  const times=[];
+  const pushT=(ap,h,mi)=>{h=+h;mi=+mi||0;if(h>24||mi>59)return;
+    if(ap&&/오후|저녁|밤|낮/.test(ap)&&h<12)h+=12;else if(!ap&&h>=1&&h<=7)h+=12; // 1~7시는 오후로 간주
+    add(times,`${pad(h%24)}:${pad(mi)}`)};
+  const rT1=/(오전|오후|아침|낮|저녁|밤)?\s*(?<!\d)(\d{1,2})\s*시(?!간|청|장)\s*(?:(\d{1,2})\s*분|(반))?/g;
+  const rT2=/(오전|오후)?\s*(?<!\d)([01]?\d|2[0-3])\s*[:：]\s*([0-5]\d)(?!\d)/g;
+  while((m=rT1.exec(t2)))pushT(m[1],m[2],m[3]||(m[4]?30:0));
+  while((m=rT2.exec(t2)))pushT(m[1],m[2],m[3]);
+  const units=[];
+  const rU=/(?:(\d{1,3})\s*동\s*)?(?<!\d)(B?\d{2,4})\s*호(?!수|출|선)/g;
+  while((m=rU.exec(t2)))add(units,`${m[1]?m[1]+'동 ':''}${m[2]}호`);
+  const flat=t.replace(/\s/g,'');
+  const villas=state.villas.filter(v=>{const n=v.name.replace(/\(.*?\)|\s/g,'');const core=n.replace(/(빌라|맨션|하우스|주택|타운|빌)$/,'');return n&&(flat.includes(n)||(core.length>=2&&flat.includes(core)))}).map(v=>v.name);
+  // 목록에 없는 새 건물 이름도 "OO빌라" 형태면 찾기
+  const rV=/([가-힣A-Za-z0-9]{1,12}(?:빌라|맨션|하우스|빌리지|타운|주택|아파트|오피스텔))/g;
+  while((m=rV.exec(t2)))if(!villas.some(n=>n.replace(/\(.*?\)|\s/g,'').includes(m[1])))add(villas,m[1]);
+  const keywords=KEYWORDS.filter(k=>flat.includes(k));
+  return{phones,dates,times,units,villas,keywords};
+}
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('인식 엔진을 불러오지 못했어요. 인터넷 연결을 확인해 주세요.'));document.head.appendChild(s)})}
+let ocrWorker=null,ocrProgress=null;
+async function getWorker(){
+  if(!window.Tesseract)await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
+  if(!ocrWorker)ocrWorker=await Tesseract.createWorker('kor+eng',1,{logger:m=>ocrProgress&&ocrProgress(m)});
+  return ocrWorker;
+}
+function fileToImg(file){return new Promise((res,rej)=>{const url=URL.createObjectURL(file),im=new Image();im.onload=()=>res(im);im.onerror=()=>rej(new Error('이미지를 열 수 없어요'));im.src=url})}
+async function compress(file,max=1280,q=.72){
+  const im=await fileToImg(file),s=Math.min(1,max/Math.max(im.naturalWidth,im.naturalHeight));
+  const c=document.createElement('canvas');c.width=Math.round(im.naturalWidth*s);c.height=Math.round(im.naturalHeight*s);
+  c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(im.src);return c.toDataURL('image/jpeg',q)}
+async function ocrCanvas(file){
+  // 흑백 + 대비 강화로 인식률 향상
+  const im=await fileToImg(file),w=im.naturalWidth,h=im.naturalHeight,mx=Math.max(w,h);
+  const s=mx<1200?Math.min(2.5,1600/mx):Math.min(1,2200/mx);
+  const c=document.createElement('canvas');c.width=Math.round(w*s);c.height=Math.round(h*s);
+  const ctx=c.getContext('2d');ctx.drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(im.src);
+  const d=ctx.getImageData(0,0,c.width,c.height),p=d.data;
+  for(let i=0;i<p.length;i+=4){const g=.299*p[i]+.587*p[i+1]+.114*p[i+2];const v=Math.max(0,Math.min(255,(g-128)*1.4+128));p[i]=p[i+1]=p[i+2]=v}
+  ctx.putImageData(d,0,0);return c}
+async function handleScanFile(file){
+  scan={img:await compress(file),busy:true,progress:0,status:'글자 인식 준비 중…',text:null,parsed:null};
+  go('scan');
+  const upd=()=>{const b=$('#p-scan .progress');if(b){b.querySelector('b').textContent=scan.status;b.querySelector('.bar div').style.width=Math.round(scan.progress*100)+'%'}};
+  ocrProgress=m=>{
+    if(m.status==='recognizing text'){scan.status='글자 인식 중…';scan.progress=m.progress}
+    else if(/traineddata/.test(m.status)){scan.status='한글 인식 데이터 받는 중 (처음 한 번만)…';scan.progress=m.progress||0}
+    else scan.status='인식 엔진 준비 중…';
+    upd()};
+  try{
+    const [canvas,worker]=await Promise.all([ocrCanvas(file),getWorker()]);
+    const{data}=await worker.recognize(canvas);
+    scan.text=cleanOcr(data.text);
+    if(!scan.text)toast('글자를 찾지 못했어요. 더 가까이, 밝게 찍어 주세요.');
+  }catch(e){scan.text='';toast(e.message||'인식 실패')}
+  scan.busy=false;ocrProgress=null;
+  if(cur==='scan')render();
+}
+function cleanOcr(s){return String(s||'').split('\n').map(l=>l.replace(/\s+/g,' ').trim()).filter(Boolean).join('\n')}
+function scanPrefill(){const p=scan.parsed||parseText(scan.text||'');return{villa:p.villas[0]||'',unit:p.units[0]||'',date:p.dates[0]||todayStr(),time:p.times[0]||'',contact:p.phones[0]||'',title:p.keywords.length?p.keywords.slice(0,3).join('·')+' 점검':'',memo:(scan.text||'').trim()}}
+
+/* ---------- 음성 일정 등록 + AI 분석 ---------- */
+// API 키는 백업 파일에 섞이지 않도록 state 가 아닌 localStorage 에 따로 보관
+const aiKey=()=>{try{return localStorage.getItem('vn_ai_key')||''}catch{return ''}};
+const JOB_SCHEMA={type:'object',additionalProperties:false,required:['jobs'],properties:{jobs:{type:'array',items:{type:'object',additionalProperties:false,
+  required:['villa','unit','date','time','title','contact','memo'],
+  properties:{
+    villa:{type:'string',description:'건물 이름 (예: 하늘빌라). 없으면 빈 문자열'},
+    unit:{type:'string',description:'호수 (예: 301호, 101동 202호, 공용). 없으면 빈 문자열'},
+    date:{type:'string',description:'YYYY-MM-DD. 날짜 언급이 없으면 오늘'},
+    time:{type:'string',description:'HH:MM 24시간제. 없으면 빈 문자열'},
+    title:{type:'string',description:'짧은 작업 내용 (예: 욕실 누수 점검)'},
+    contact:{type:'string',description:'전화번호 010-0000-0000 형식. 없으면 빈 문자열'},
+    memo:{type:'string',description:'그 밖의 참고 사항 (비번, 준비물, 요청자 이름 등). 없으면 빈 문자열'}}}}}};
+async function aiExtract(text){
+  const t=todayStr(),d=new Date();
+  const system=`너는 빌라 수리·관리 업체의 일정 비서야. 사용자가 말로 한 내용(음성인식이라 오타·띄어쓰기 오류가 있을 수 있음)에서 방문/수리 일정을 뽑아 JSON으로 돌려줘.
+오늘은 ${fmtDate(t,true)}이고 지금 시각은 ${pad(d.getHours())}:${pad(d.getMinutes())}야. "내일", "모레", "다음주 화요일", "이번 주 금요일" 같은 표현은 실제 날짜로 바꿔.
+시간에 오전/오후가 없고 1~7시면 오후로 봐. "공일공 일이삼사..." 처럼 한글로 읽은 숫자는 전화번호 숫자로 바꿔.
+등록된 빌라 이름: ${state.villas.map(v=>v.name.replace(/\(.*?\)/g,'')).join(', ')||'없음'} — 비슷하게 들리는 이름이면 이 목록의 이름으로 맞춰 줘.
+일정이 여러 개면 jobs 배열에 각각 넣고, 일정이 아닌 말만 있으면 빈 배열을 돌려줘.`;
+  const body={model:'claude-opus-5-5',max_tokens:4000,system,
+    output_config:{effort:'low',format:{type:'json_schema',schema:JOB_SCHEMA}},
+    messages:[{role:'user',content:text}]};
+  const call=async fallback=>{
+    const headers={'content-type':'application/json','x-api-key':aiKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'};
+    if(fallback)headers['anthropic-beta']='server-side-fallback-2026-07-01';
+    return fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers,body:JSON.stringify(fallback?{...body,fallbacks:'default'}:body)});
+  };
+  let res=await call(true);
+  if(res.status===400)res=await call(false); // 거절 대비 fallback 옵션이 안 받아지면 기본 요청으로 재시도
+  const j=await res.json().catch(()=>({}));
+  if(!res.ok)throw new Error(res.status===401?'AI 키가 올바르지 않아요':(j.error?.message||'AI 요청 실패 ('+res.status+')'));
+  if(j.stop_reason==='refusal')throw new Error('AI가 이 내용을 처리하지 못했어요');
+  const txt=(j.content||[]).find(b=>b.type==='text')?.text||'{}';
+  return (JSON.parse(txt).jobs||[]).map(x=>({...x,date:/^\d{4}-\d\d-\d\d$/.test(x.date)?x.date:t,time:/^\d\d:\d\d$/.test(x.time)?x.time:''}));
+}
+// AI 키가 없을 때 쓰는 기본 분석
+function localExtract(text){
+  const p=parseText(text);
+  let rest=text;
+  [...p.phones.map(x=>x.replace(/-/g,'[\\s\\-.]*')),'\\d{1,2}\\s*월\\s*\\d{1,2}\\s*일','(오늘|내일|모레)','(오전|오후|아침|낮|저녁|밤)?\\s*\\d{1,2}\\s*시\\s*(\\d{1,2}\\s*분|반)?','\\d{1,2}\\s*[:：]\\s*\\d{2}','(\\d{1,3}\\s*동\\s*)?\\d{2,4}\\s*호',...p.villas.map(v=>v.replace(/\(.*?\)/g,''))]
+    .forEach(r=>{rest=rest.replace(new RegExp(r,'g'),' ')});
+  rest=rest.replace(/(에|에서|으로|로|까지|쯤|경|방문|예약|일정|잡아\s*줘|등록\s*해?\s*줘|해\s*줘|부탁|전화번호|연락처|번호|요청)(?=\s|$|[,.])/g,' ').replace(/[,.]/g,' ').replace(/\s+/g,' ').trim();
+  const title=rest.length>=2?rest.slice(0,40):(p.keywords.length?p.keywords.slice(0,3).join('·')+' 점검':'');
+  return [{villa:p.villas[0]||'',unit:p.units[0]||'',date:p.dates[0]||todayStr(),time:p.times[0]||'',title,contact:p.phones[0]||'',memo:text.trim()}];
+}
+async function smartJobs(text){
+  if(aiKey()){try{const r=await aiExtract(text);if(r.length)return{jobs:r,ai:true};toast('AI가 일정을 찾지 못해 기본 분석을 사용했어요')}catch(e){toast(e.message+' · 기본 분석으로 바꿨어요')}}
+  return{jobs:localExtract(text),ai:false};
+}
+
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let rec=null,recOn=false;
+function openVoice(){
+  openSheet('말로 일정 등록',`
+  <div class="voice">
+    <button class="mic" id="micBtn" data-act="micToggle" aria-label="음성 입력">${ic('mic',44)}</button>
+    <div id="micState">${SR?'마이크를 누르고 말씀하세요':'이 브라우저는 음성인식을 지원하지 않아요'}</div>
+    <p class="hint">${SR?'예) "내일 오후 2시 하늘빌라 301호 보일러 누수 점검, 세입자 공일공 1234 5678"':'아래 칸을 누르고 키보드의 🎤 버튼으로 말해 주세요'}</p>
+  </div>
+  <div class="fld"><textarea id="voiceText" rows="4" placeholder="말한 내용이 여기에 적혀요. 직접 고쳐도 돼요"></textarea></div>
+  <div class="ai-note ${aiKey()?'on':''}">${aiKey()?ic('spark',16)+' AI가 날짜·시간·호수·연락처를 알아서 정리해요 · 여러 건도 한 번에':'기본 분석 사용 중 · 설정 › AI 연결에서 키를 넣으면 더 정확해져요'}</div>`,
+  `<button class="btn ghost" data-act="voiceClear" style="flex:0 0 90px">지우기</button><button class="btn primary" id="voiceGoBtn" data-act="voiceGo">${ic('check',18)} 일정으로 만들기</button>`);
+  if(SR)startRec();
+}
+function updMic(){const b=$('#micBtn'),s=$('#micState');if(!b)return;b.classList.toggle('on',recOn);s.textContent=recOn?'듣고 있어요… 다 말하면 마이크를 한 번 더 누르세요':'마이크를 누르고 말씀하세요'}
+function startRec(){
+  try{
+    const base=$('#voiceText').value.trim();
+    rec=new SR();rec.lang='ko-KR';rec.continuous=true;rec.interimResults=true;
+    rec.onresult=e=>{let s='';for(let i=0;i<e.results.length;i++)s+=e.results[i][0].transcript;const ta=$('#voiceText');if(ta)ta.value=(base?base+' ':'')+s.trim()};
+    rec.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed')toast('마이크 권한을 허용해 주세요');else if(e.error!=='aborted'&&e.error!=='no-speech')toast('음성인식 오류: '+e.error)};
+    rec.onend=()=>{recOn=false;updMic()};
+    rec.start();recOn=true;updMic();
+  }catch(e){recOn=false;updMic();toast('음성인식을 시작하지 못했어요')}
+}
+function stopRec(abort){if(rec&&recOn){try{abort?rec.abort():rec.stop()}catch{}}recOn=false}
+function openVoiceResults(jobs,ai){
+  window._vjobs=jobs;
+  openSheet(`일정 ${jobs.length}건을 찾았어요`,`
+    <p class="hint" style="margin:0 0 12px">${ai?'✨ AI가 정리한 결과예요. ':''}등록할 일정을 확인하세요. 누르면 자세히 고칠 수 있어요.</p>
+    ${jobs.map((j,i)=>`<div class="vjob"><input type="checkbox" checked data-vi="${i}"><div style="flex:1;min-width:0" data-act="vEdit" data-i="${i}"><div class="job-title">${esc(j.title||'(작업 내용 없음)')}</div>
+      <div class="s">${fmtDate(j.date)} ${j.time?fmtTimeShort(j.time):'시간 미정'} · ${esc(j.villa||'빌라 미정')} ${esc(j.unit)}${j.contact?' · '+esc(j.contact):''}</div></div></div>`).join('')}`,
+    `<button class="btn ghost" data-act="voice" style="flex:0 0 110px">${ic('mic',18)} 다시</button><button class="btn primary" data-act="vSaveAll">선택한 일정 등록</button>`);
+}
+function icsFor(j){
+  const D=s=>s.replace(/-/g,''),e=t=>String(t||'').replace(/[\\;,]/g,m=>'\\'+m).replace(/\n/g,'\\n');
+  let s,en;
+  if(j.time){const st=new Date(`${j.date}T${j.time}`),et=new Date(st.getTime()+36e5);const f=x=>`${D(ymd(x))}T${pad(x.getHours())}${pad(x.getMinutes())}00`;s=`DTSTART:${f(st)}`;en=`DTEND:${f(et)}`}
+  else{s=`DTSTART;VALUE=DATE:${D(j.date)}`;en=`DTEND;VALUE=DATE:${D(addDays(j.date,1))}`}
+  return['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//villanote//KO','BEGIN:VEVENT',`UID:${j.id}@villanote`,`DTSTAMP:${new Date().toISOString().replace(/[-:]/g,'').slice(0,15)}Z`,s,en,
+    `SUMMARY:${e(`${j.villa||''} ${j.unit||''} ${j.title}`.replace(/\s+/g,' ').trim())}`,`LOCATION:${e(j.villa)}`,`DESCRIPTION:${e([j.contact&&'연락처 '+j.contact,j.memo].filter(Boolean).join('\n'))}`,
+    'BEGIN:VALARM','TRIGGER:-PT30M','ACTION:DISPLAY','DESCRIPTION:방문 30분 전','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
+}
+function downloadIcs(j){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([icsFor(j)],{type:'text/calendar'}));a.download=`${(j.villa||'일정')}_${j.date}.ics`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);toast('파일을 열면 휴대폰 캘린더에 추가돼요 (30분 전 알림)')}
+
+/* ---------- sheet ---------- */
+let formPhotos=[];
+function openSheet(title,body,foot=''){
+  $('#sheetTitle').textContent=title;$('#sheetBody').innerHTML=body;$('#sheetFoot').innerHTML=foot;
+  $('#sheet .sheet-head .icon-btn').innerHTML=ic('x',20);
+  $('#sheet').classList.add('on');$('#sheetBody').scrollTop=0;document.body.style.overflow='hidden';hydrate($('#sheet'));
+}
+function closeSheet(){stopRec(true);$('#sheet').classList.remove('on');document.body.style.overflow=''}
+const fld=(label,inner)=>`<div class="fld"><span class="fl">${label}</span>${inner}</div>`;
+const seg=(name,opts,val)=>`<div class="seg">${opts.map(o=>`<label><input type="radio" name="${name}" value="${o}" ${o===val?'checked':''}><span>${o}</span></label>`).join('')}</div>`;
+const villaInput=v=>`<input name="villa" list="villaList" value="${esc(v)}" placeholder="예) 하늘빌라" autocomplete="off"><datalist id="villaList">${state.villas.map(x=>`<option value="${esc(x.name)}">`).join('')}</datalist>`;
+const photoStrip=()=>`<div class="photos" id="photoStrip">${formPhotos.map(id=>`<div class="ph"><img data-photo="${id}" data-act="viewPhoto" data-id="${id}" alt=""><button type="button" data-act="rmPhoto" data-id="${id}">×</button></div>`).join('')}<label class="ph add">${ic('cam',22)}<span>사진 추가</span><input type="file" accept="image/*" multiple hidden data-addphoto></label></div>`;
+function refreshStrip(){const el=$('#photoStrip');if(el){el.outerHTML=photoStrip();hydrate($('#sheet'))}}
+function formData(){const f=$('#f');const o={};new FormData(f).forEach((v,k)=>o[k]=typeof v==='string'?v.trim():v);return o}
+
+/* job */
+function jobForm(j={}){
+  openSheet(j.id?'일정 수정':'일정 등록',`<form id="f" data-kind="job">
+    ${j.id?'':`<div class="mini-row"><button type="button" class="btn yellow" data-act="voice">${ic('mic',18)} 말로 입력하기</button></div>`}
+    <div class="row2">${fld('빌라',villaInput(j.villa))}${fld('호수',`<input name="unit" value="${esc(j.unit)}" placeholder="301호 / 공용">`)}</div>
+    <div class="row2">${fld('날짜',`<input type="date" name="date" value="${j.date||selDate}">`)}${fld('시간',`<input type="time" name="time" value="${j.time||''}">`)}</div>
+    ${fld('작업 내용',`<input name="title" value="${esc(j.title)}" placeholder="예) 욕실 누수 점검">`)}
+    ${fld('연락처',`<input name="contact" type="tel" inputmode="tel" value="${esc(j.contact)}" placeholder="010-0000-0000">`)}
+    ${fld('메모',`<textarea name="memo" rows="3" placeholder="현관 비번, 준비물 등">${esc(j.memo)}</textarea>`)}
+    ${fld('상태',seg('status',['예약','완료','취소'],j.status||'예약'))}
+    <button type="button" class="btn ghost block" data-act="jobIcs" style="margin-bottom:6px">${ic('bell',18)} 휴대폰 캘린더에 추가 (30분 전 알림)</button>
+    <input type="hidden" name="id" value="${j.id||''}"><input type="hidden" name="complaintId" value="${j.complaintId||''}">
+  </form>`,
+  `${j.id?`<button class="btn danger" data-act="delJob" data-id="${j.id}" style="flex:0 0 52px">${ic('trash',18)}</button>`:''}
+   <button class="btn ghost" data-act="jobSms">${ic('msg',18)} 문자</button>
+   <button class="btn ghost" data-act="jobBill">${ic('bill',18)} 청구</button>
+   <button class="btn primary" data-act="saveJob">저장</button>`);
+}
+function saveJob(){
+  const o=formData();ensureVilla(o.villa);if(!o.title){toast('작업 내용을 입력해 주세요');return null}if(!o.date){toast('날짜를 선택해 주세요');return null}
+  let j=state.jobs.find(x=>x.id===o.id);
+  if(j)Object.assign(j,o);else{j={...o,id:uid()};state.jobs.push(j);$('#f [name=id]').value=j.id}
+  if(j.complaintId){const c=state.complaints.find(c=>c.id===j.complaintId);if(c&&c.status==='접수')c.status='처리중'}
+  save();render();return j;
+}
+const jobCtx=j=>({빌라:(j.villa||""),호수:j.unit,날짜:fmtDate(j.date),시간:fmtTime(j.time),작업:j.title});
+
+/* complaint */
+function cForm(c={}){
+  formPhotos=[...(c.photos||[])];
+  openSheet(c.id?'민원 상세':'민원 접수',`<form id="f" data-kind="c">
+    <div class="row2">${fld('빌라',villaInput(c.villa))}${fld('호수',`<input name="unit" value="${esc(c.unit)}" placeholder="302호 / 공용">`)}</div>
+    <div class="row2">${fld('신고자',`<input name="reporter" value="${esc(c.reporter)}" placeholder="세입자, 건물주 등">`)}${fld('연락처',`<input name="phone" type="tel" inputmode="tel" value="${esc(c.phone)}" placeholder="010-0000-0000">`)}</div>
+    ${fld('접수일',`<input type="date" name="date" value="${c.date||todayStr()}">`)}
+    ${fld('민원 제목',`<input name="title" value="${esc(c.title)}" placeholder="예) 보일러 온수 안 나옴">`)}
+    ${fld('상세 내용',`<textarea name="content" rows="4">${esc(c.content)}</textarea>`)}
+    ${fld('현장 사진',photoStrip())}
+    ${fld('처리 상태',seg('status',['접수','처리중','완료'],c.status||'접수'))}
+    <input type="hidden" name="id" value="${c.id||''}">
+  </form>`,
+  `${c.id?`<button class="btn danger" data-act="delC" data-id="${c.id}" style="flex:0 0 52px">${ic('trash',18)}</button>`:''}
+   <button class="btn ghost" data-act="cToJob">${ic('cal',18)} 방문일정</button>
+   <button class="btn ghost" data-act="cSms">${ic('msg',18)} 문자</button>
+   <button class="btn primary" data-act="saveC">저장</button>`);
+}
+function saveC(){
+  const o=formData();ensureVilla(o.villa);if(!o.title){toast('민원 제목을 입력해 주세요');return null}
+  o.photos=[...formPhotos];
+  let c=state.complaints.find(x=>x.id===o.id);
+  if(c)Object.assign(c,o);else{c={...o,id:uid()};state.complaints.push(c);$('#f [name=id]').value=c.id}
+  save();render();return c;
+}
+
+/* bill */
+const itemRow=(it={name:'',qty:1,price:''})=>`<div class="item"><input class="i-name" placeholder="품목" value="${esc(it.name)}"><input class="i-qty" type="number" inputmode="numeric" min="0" value="${esc(it.qty)}"><input class="i-price" type="number" inputmode="numeric" placeholder="단가" value="${esc(it.price)}"><button type="button" class="icon-btn" data-act="rmItem" style="width:32px;height:32px">${ic('x',16)}</button></div>`;
+function readItems(){return $$('#itemList .item').map(r=>({name:r.querySelector('.i-name').value.trim(),qty:+r.querySelector('.i-qty').value||0,price:+r.querySelector('.i-price').value||0})).filter(i=>i.name||i.price)}
+function updTotal(){const el=$('#billTotal');if(!el)return;const s=billSum({items:readItems(),vat:$('#f [name=vat]').checked});
+  el.innerHTML=`<div class="r"><span>공급가</span><span>${won(s.sub)}</span></div>${s.vat?`<div class="r"><span>부가세 10%</span><span>${won(s.vat)}</span></div>`:''}<div class="r big"><span>합계</span><span>${won(s.total)}</span></div>`}
+function billForm(b={}){
+  formPhotos=[...(b.photos||[])];
+  const items=b.items?.length?b.items:[{name:'',qty:1,price:''}];
+  openSheet(b.id?'청구서 수정':'청구서 작성',`<form id="f" data-kind="bill">
+    <div class="row2">${fld('빌라',villaInput(b.villa))}${fld('호수',`<input name="unit" value="${esc(b.unit)}" placeholder="201호 / 공용">`)}</div>
+    <div class="row2">${fld('청구 대상',`<input name="to" value="${esc(b.to)}" placeholder="건물주, 세입자">`)}${fld('연락처',`<input name="phone" type="tel" inputmode="tel" value="${esc(b.phone)}" placeholder="010-0000-0000">`)}</div>
+    <div class="row2">${fld('작업일',`<input type="date" name="date" value="${b.date||todayStr()}">`)}${fld('작업 내용',`<input name="title" value="${esc(b.title)}" placeholder="누수 배관 교체">`)}</div>
+    <div class="fld"><span class="fl">청구 항목</span>
+      <div class="item-head"><span>품목</span><span>수량</span><span>단가(원)</span><span></span></div>
+      <div id="itemList">${items.map(itemRow).join('')}</div>
+      <div class="chips" style="margin-top:6px">${['출장비','인건비','부품비','자재비','폐기물 처리'].map(n=>`<button type="button" class="chip" data-act="addItem" data-n="${n}">+ ${n}</button>`).join('')}<button type="button" class="chip" data-act="addItem" data-n="">+ 직접 입력</button></div>
+      <label class="check"><input type="checkbox" name="vat" ${b.vat?'checked':''}> 부가세 10% 포함</label>
+      <div class="total" id="billTotal"></div>
+    </div>
+    ${fld('작업 사진 (전·후)',photoStrip())}
+    ${fld('메모',`<textarea name="memo" rows="2">${esc(b.memo)}</textarea>`)}
+    ${fld('상태',seg('status',['미청구','청구','입금완료'],b.status||'미청구'))}
+    <input type="hidden" name="id" value="${b.id||''}">
+  </form>`,
+  `${b.id?`<button class="btn danger" data-act="delBill" data-id="${b.id}" style="flex:0 0 52px">${ic('trash',18)}</button>`:''}
+   <button class="btn yellow" data-act="billSms">${ic('msg',18)} 청구 문자</button>
+   <button class="btn primary" data-act="saveBill">저장</button>`);
+  updTotal();
+}
+function saveBill(){
+  const o=formData();ensureVilla(o.villa);if(!o.title){toast('작업 내용을 입력해 주세요');return null}
+  o.vat=!!$('#f [name=vat]').checked;o.items=readItems();o.photos=[...formPhotos];
+  if(!o.items.length){toast('청구 항목을 한 개 이상 입력해 주세요');return null}
+  let b=state.bills.find(x=>x.id===o.id);
+  if(b)Object.assign(b,o);else{b={...o,id:uid()};state.bills.push(b);$('#f [name=id]').value=b.id}
+  save();render();return b;
+}
+function billText(b){
+  const s=billSum(b),S=state.settings;
+  return [`[${S.bizName}] 수리비 청구 안내`,`${(b.villa||"")} ${b.unit||''}`.trim(),`작업일: ${fmtDate(b.date)}`,`작업내용: ${b.title}`,'────────',
+    ...b.items.map(i=>`· ${i.name}${i.qty!==1?` ×${i.qty}`:''}  ${won(i.qty*i.price)}`),'────────',
+    ...(s.vat?[`공급가 ${won(s.sub)}`,`부가세 ${won(s.vat)}`]:[]),`합계 ${won(s.total)}`,
+    S.account?`\n입금 계좌: ${S.account}`:'',S.myPhone?`문의: ${S.myPhone}`:''].filter(x=>x!=='').join('\n');
+}
+
+/* sms */
+let smsCtx={};
+function fillTpl(tpl,ctx){const S=state.settings;const all={업체:S.bizName,연락처:S.myPhone,...ctx};return tpl.replace(/\{(.+?)\}/g,(_,k)=>all[k]??'').replace(/[ \t]{2,}/g,' ').replace(/ +\n/g,'\n')}
+function openSms(ctx={},phone='',body=null){
+  smsCtx=ctx;const T=state.settings.templates;
+  openSheet('문자 보내기',`
+    ${fld('받는 사람',`<input id="smsTo" type="tel" inputmode="tel" value="${esc(phone)}" placeholder="010-0000-0000">`)}
+    ${T.length?`<div class="fld"><span class="fl">문자 양식</span><div class="chips">${T.map((t,i)=>`<button type="button" class="chip ${body===null&&i===0?'on':''}" data-act="pickTpl" data-i="${i}">${esc(t.name)}</button>`).join('')}</div></div>`:''}
+    ${fld('내용',`<textarea id="smsBody" rows="9">${esc(body??(T[0]?fillTpl(T[0].body,ctx):''))}</textarea>`)}
+    <p class="hint">내용은 자유롭게 고칠 수 있어요. 양식은 설정 › 문자 양식에서 바꿀 수 있어요.</p>`,
+    `<button class="btn ghost" data-act="copySms">${ic('copy',18)} 복사</button>
+     ${navigator.share?`<button class="btn ghost" data-act="shareSms">${ic('share',18)} 공유</button>`:''}
+     <button class="btn primary" data-act="sendSms">${ic('msg',18)} 문자 앱 열기</button>`);
+}
+
+/* villas & settings */
+function openVillas(){
+  openSheet('빌라 관리',`<p class="hint" style="margin:0 0 6px">일정·민원·청구에 빌라 이름을 새로 쓰면 여기에 자동으로 추가돼요.</p>${state.villas.map(v=>{const n=state.jobs.filter(j=>j.villa===v.name&&j.status==='예약').length,c=state.complaints.filter(x=>x.villa===v.name&&x.status!=='완료').length;
+    return `<div class="list-row" data-act="editVilla" data-id="${v.id}"><div><div class="t">${esc(v.name)}</div><div class="s">${esc(v.address||'주소 미입력')}${v.units?' · '+esc(v.units):''}</div></div><div class="s">예정 ${n} · 민원 ${c} ›</div></div>`}).join('')||'<div class="empty">등록된 빌라가 없어요</div>'}`,
+  `<button class="btn primary" data-act="editVilla">${ic('plus',18)} 빌라 추가</button>`);
+}
+function villaForm(v={}){
+  openSheet(v.id?'빌라 정보':'빌라 추가',`<form id="f">
+    ${fld('빌라 이름',`<input name="name" value="${esc(v.name)}" placeholder="예) 하늘빌라">`)}
+    ${fld('주소',`<input name="address" value="${esc(v.address)}">`)}
+    <div class="row2">${fld('세대 수',`<input name="units" value="${esc(v.units)}" placeholder="12세대">`)}${fld('건물주 연락처',`<input name="owner" type="tel" value="${esc(v.owner)}">`)}</div>
+    ${fld('관리 메모',`<textarea name="memo" rows="3" placeholder="공동현관 비번, 계량기 위치, 단골 업체 등">${esc(v.memo)}</textarea>`)}
+    <input type="hidden" name="id" value="${v.id||''}">
+  </form>`,
+  `${v.id?`<button class="btn danger" data-act="delVilla" data-id="${v.id}" style="flex:0 0 52px">${ic('trash',18)}</button>`:''}<button class="btn ghost" data-act="villas">목록</button><button class="btn primary" data-act="saveVilla">저장</button>`);
+}
+function openSettings(){
+  const S=state.settings;
+  openSheet('설정',`
+  <div class="set-group"><h4>업체 정보 <small style="color:var(--sub);font-weight:400">(문자·청구서에 사용)</small></h4>
+    ${fld('업체명 / 이름',`<input id="sBiz" value="${esc(S.bizName)}">`)}
+    ${fld('내 연락처',`<input id="sPhone" type="tel" value="${esc(S.myPhone)}" placeholder="010-0000-0000">`)}
+    ${fld('입금 계좌',`<input id="sAcc" value="${esc(S.account)}" placeholder="OO은행 000-0000-0000 홍길동">`)}
+    <button class="btn primary block" data-act="saveSettings">업체 정보 저장</button></div>
+  <div class="set-group"><h4>${ic('spark',16).replace('class="ic"','class="ic" style="display:inline;vertical-align:-2px;color:#7C3AED"')} AI 연결 <small style="color:var(--sub);font-weight:400">(말로 일정 등록을 더 똑똑하게)</small></h4>
+    <p class="hint" style="margin:0 0 10px">Claude API 키를 넣으면 "다음주 화요일", 한글로 읽은 전화번호, 여러 건 동시 등록까지 AI가 알아서 정리해요. 키는 이 휴대폰에만 저장되고 백업 파일에는 들어가지 않아요. 키는 console.anthropic.com 에서 발급받을 수 있어요 (사용한 만큼 요금 발생).</p>
+    ${fld('Claude API 키',`<input id="sKey" type="password" autocomplete="off" value="${esc(aiKey())}" placeholder="sk-ant-...">`)}
+    <div class="row2"><button class="btn primary" data-act="saveAiKey">키 저장</button><button class="btn ghost" data-act="testAi">연결 테스트</button></div></div>
+  <div class="set-group"><h4>빌라</h4><button class="btn ghost block" data-act="villas">${ic('building',18)} 빌라 관리 (${state.villas.length}곳)</button></div>
+  <div class="set-group"><h4>문자 양식</h4>
+    ${S.templates.map((t,i)=>`<div class="list-row" data-act="editTpl" data-i="${i}"><div style="min-width:0"><div class="t">${esc(t.name)}</div><div class="s" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.body.replace(/\n/g,' '))}</div></div>${ic('edit',18)}</div>`).join('')}
+    <button class="btn ghost block" style="margin-top:10px" data-act="editTpl" data-i="-1">${ic('plus',18)} 양식 추가</button></div>
+  <div class="set-group"><h4>데이터 백업</h4>
+    <p class="hint" style="margin:0 0 10px">모든 기록은 이 휴대폰 안에만 저장돼요. 휴대폰을 바꾸거나 앱 데이터를 지우기 전에 꼭 백업하세요.</p>
+    <div class="row2"><button class="btn ghost" data-act="exportData">백업 파일 저장</button><label class="btn ghost" style="cursor:pointer">백업 불러오기<input type="file" accept=".json,application/json" hidden data-import></label></div>
+    <button class="btn danger block" style="margin-top:10px" data-act="resetAll">모든 데이터 지우기</button></div>`);
+}
+function tplForm(i){
+  const t=i>=0?state.settings.templates[i]:{name:'',body:''};
+  openSheet(i>=0?'문자 양식 수정':'문자 양식 추가',`
+    ${fld('양식 이름',`<input id="tName" value="${esc(t.name)}">`)}
+    ${fld('내용',`<textarea id="tBody" rows="8">${esc(t.body)}</textarea>`)}
+    <p class="hint">자동으로 채워지는 칸: {업체} {연락처} {빌라} {호수} {날짜} {시간} {작업}</p>`,
+    `${i>=0?`<button class="btn danger" data-act="delTpl" data-i="${i}" style="flex:0 0 52px">${ic('trash',18)}</button>`:''}<button class="btn ghost" data-act="settings">취소</button><button class="btn primary" data-act="saveTpl" data-i="${i}">저장</button>`);
+}
+async function exportData(){
+  const photos={};
+  if(db){const keys=await idb('photos','readonly',s=>s.getAllKeys());for(const k of keys)photos[k]=await getPhoto(k)}
+  const blob=new Blob([JSON.stringify({app:'villanote',v:1,state,photos})],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`빌라노트_백업_${todayStr()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  toast('백업 파일을 저장했어요');
+}
+async function importData(file){
+  try{const d=JSON.parse(await file.text());if(d.app!=='villanote'||!d.state)throw new Error();
+    if(!confirm('백업 파일로 현재 데이터를 모두 바꿀까요?'))return;
+    for(const[k,v]of Object.entries(d.photos||{})){photoCache.set(k,v);if(db)await idb('photos','readwrite',s=>s.put(v,k))}
+    state=d.state;await save();closeSheet();render();toast('백업을 불러왔어요');
+  }catch{toast('올바른 백업 파일이 아니에요')}
+}
+
+/* ---------- events ---------- */
+const A={
+  go:el=>{closeSheet();go(el.dataset.p)},
+  goScan:()=>go('scan'),
+  settings:openSettings, villas:openVillas, closeSheet,
+  newJob:()=>jobForm({}), newC:()=>cForm({}), newBill:()=>billForm({}),
+  editJob:el=>jobForm(state.jobs.find(j=>j.id===el.dataset.id)),
+  editC:el=>cForm(state.complaints.find(c=>c.id===el.dataset.id)),
+  editBill:el=>billForm(state.bills.find(b=>b.id===el.dataset.id)),
+  toggleJob:el=>{const j=state.jobs.find(j=>j.id===el.dataset.id);j.status=j.status==='완료'?'예약':'완료';save();render();if(j.status==='완료')toast('완료 처리했어요 ✓')},
+  smsJob:el=>{const j=state.jobs.find(j=>j.id===el.dataset.id);openSms(jobCtx(j),j.contact)},
+  pickDay:el=>{selDate=el.dataset.d;render()},
+  calMove:el=>{cal.m+= +el.dataset.n;if(cal.m<0){cal.m=11;cal.y--}if(cal.m>11){cal.m=0;cal.y++}render()},
+  calToday:()=>{selDate=todayStr();const d=new Date();cal={y:d.getFullYear(),m:d.getMonth()};render()},
+  cFilter:el=>{cFilter=el.dataset.s;render()}, bFilter:el=>{bFilter=el.dataset.s;render()},
+  saveJob:()=>{if(saveJob()){closeSheet();toast('일정을 저장했어요')}},
+  delJob:el=>{if(!confirm('이 일정을 삭제할까요?'))return;state.jobs=state.jobs.filter(j=>j.id!==el.dataset.id);save();closeSheet();render()},
+  jobSms:()=>{const j=saveJob();if(j)openSms(jobCtx(j),j.contact)},
+  jobBill:()=>{const j=saveJob();if(j)billForm({villa:j.villa,unit:j.unit,phone:j.contact,title:j.title,date:j.date})},
+  saveC:()=>{if(saveC()){closeSheet();toast('민원을 저장했어요')}},
+  delC:el=>{if(!confirm('이 민원을 삭제할까요?'))return;state.complaints=state.complaints.filter(c=>c.id!==el.dataset.id);save();closeSheet();render()},
+  cToJob:()=>{const c=saveC();if(c)jobForm({villa:c.villa,unit:c.unit,contact:c.phone,title:c.title,memo:c.content,complaintId:c.id,date:todayStr()})},
+  cSms:()=>{const c=saveC();if(c)openSms({빌라:(c.villa||""),호수:c.unit,작업:c.title},c.phone)},
+  saveBill:()=>{if(saveBill()){closeSheet();toast('청구서를 저장했어요')}},
+  delBill:el=>{if(!confirm('이 청구서를 삭제할까요?'))return;state.bills=state.bills.filter(b=>b.id!==el.dataset.id);save();closeSheet();render()},
+  billSms:()=>{const b=saveBill();if(!b)return;if(b.status==='미청구'){b.status='청구';save();render();toast('상태를 "청구"로 바꿨어요')}openSms({},b.phone,billText(b))},
+  addItem:el=>{$('#itemList').insertAdjacentHTML('beforeend',itemRow({name:el.dataset.n,qty:1,price:''}));const rows=$$('#itemList .item');const last=rows[rows.length-1];(el.dataset.n?last.querySelector('.i-price'):last.querySelector('.i-name')).focus()},
+  rmItem:el=>{el.closest('.item').remove();updTotal()},
+  rmPhoto:el=>{formPhotos=formPhotos.filter(id=>id!==el.dataset.id);refreshStrip()},
+  viewPhoto:async el=>{$('#viewer img').src=await getPhoto(el.dataset.id);$('#viewer').classList.add('on')},
+  viewSrc:el=>{$('#viewer img').src=el.src;$('#viewer').classList.add('on')},
+  closeViewer:()=>$('#viewer').classList.remove('on'),
+  pickTpl:el=>{$$('#sheetBody [data-act=pickTpl]').forEach(b=>b.classList.toggle('on',b===el));$('#smsBody').value=fillTpl(state.settings.templates[+el.dataset.i].body,smsCtx)},
+  copySms:()=>copyText($('#smsBody').value),
+  shareSms:()=>navigator.share({text:$('#smsBody').value}).catch(()=>{}),
+  sendSms:()=>{const to=$('#smsTo').value;if(!tel(to)){toast('받는 사람 번호를 입력해 주세요');return}openSmsApp(to,$('#smsBody').value)},
+  smsTo:el=>{const p=scanPrefill();openSms({빌라:(p.villa||""),호수:p.unit,날짜:fmtDate(p.date),시간:fmtTime(p.time),작업:p.title.replace(/ 점검$/,'')},el.dataset.p)},
+  copy:el=>copyText(el.dataset.t),
+  copyScan:()=>copyText($('#scanText').value),
+  pasteMode:()=>{scan={img:null,busy:false,progress:0,status:'',text:'',parsed:null};render();setTimeout(()=>{$('#scanText').focus();toast('문자 내용을 붙여넣으면 자동으로 분석해요')},50)},
+  scanToJob:()=>jobForm(scanPrefill()),
+  scanToC:async()=>{const p=scanPrefill();const photos=scan.img?[await putPhoto(scan.img)]:[];cForm({villa:p.villa,unit:p.unit,phone:p.contact,date:todayStr(),title:p.title.replace(/ 점검$/,''),content:p.memo,photos})},
+  scanToSms:()=>A.smsTo({dataset:{p:scanPrefill().contact}}),
+  scanToBill:()=>{const p=scanPrefill();billForm({villa:p.villa,unit:p.unit,phone:p.contact,title:p.title.replace(/ 점검$/,' 수리'),memo:p.memo})},
+  voice:()=>openVoice(),
+  micToggle:()=>{if(!SR){toast('키보드의 🎤 버튼으로 말해 주세요');$('#voiceText').focus();return}recOn?stopRec():startRec()},
+  voiceClear:()=>{stopRec(true);$('#voiceText').value='';updMic()},
+  voiceGo:async el=>{
+    stopRec();const text=$('#voiceText').value.trim();if(!text){toast('먼저 일정을 말하거나 적어 주세요');return}
+    el.disabled=true;el.innerHTML=`<span class="spin"></span> ${aiKey()?'AI가 정리하는 중…':'분석 중…'}`;
+    const{jobs,ai}=await smartJobs(text);
+    if(jobs.length===1)jobForm(jobs[0]);else openVoiceResults(jobs,ai);
+    if(ai&&jobs.length===1)toast('✨ AI가 내용을 채웠어요. 확인 후 저장하세요');
+  },
+  vEdit:el=>jobForm(window._vjobs[+el.dataset.i]),
+  vSaveAll:()=>{const picked=$$('#sheetBody [data-vi]').filter(c=>c.checked).map(c=>window._vjobs[+c.dataset.vi]);if(!picked.length){toast('선택한 일정이 없어요');return}
+    picked.forEach(j=>{ensureVilla(j.villa);state.jobs.push({...j,id:uid(),status:'예약',complaintId:''})});save();closeSheet();
+    selDate=picked[0].date;const d=new Date(selDate+'T00:00');cal={y:d.getFullYear(),m:d.getMonth()};go('schedule');toast(`일정 ${picked.length}건을 등록했어요`)},
+  jobIcs:()=>{const j=saveJob();if(j)downloadIcs(j)},
+  saveAiKey:()=>{const k=$('#sKey').value.trim();try{k?localStorage.setItem('vn_ai_key',k):localStorage.removeItem('vn_ai_key')}catch{}toast(k?'AI 키를 저장했어요':'AI 키를 지웠어요')},
+  testAi:async el=>{A.saveAiKey();if(!aiKey())return;el.disabled=true;el.textContent='확인 중…';
+    try{const r=await aiExtract('내일 오후 3시 하늘빌라 201호 싱크대 막힘');toast(r.length?`연결 성공! → ${fmtDate(r[0].date)} ${fmtTime(r[0].time)} ${r[0].title}`:'연결은 됐지만 결과가 비어 있어요')}catch(e){toast(e.message)}
+    el.disabled=false;el.textContent='연결 테스트'},
+  editVilla:el=>villaForm(state.villas.find(v=>v.id===el.dataset.id)||{}),
+  saveVilla:()=>{const o=formData();if(!o.name){toast('빌라 이름을 입력해 주세요');return}const v=state.villas.find(x=>x.id===o.id);if(v)Object.assign(v,o);else state.villas.push({...o,id:uid()});save();render();openVillas();toast('저장했어요')},
+  delVilla:el=>{const id=el.dataset.id;
+    if(!confirm('빌라 목록에서 삭제할까요? (기존 일정·민원·청구 기록은 그대로 남아요)'))return;state.villas=state.villas.filter(v=>v.id!==id);save();render();openVillas()},
+  saveSettings:()=>{const S=state.settings;S.bizName=$('#sBiz').value.trim()||'빌라노트';S.myPhone=$('#sPhone').value.trim();S.account=$('#sAcc').value.trim();save();render();toast('저장했어요')},
+  editTpl:el=>tplForm(+el.dataset.i),
+  saveTpl:el=>{const i=+el.dataset.i,t={name:$('#tName').value.trim()||'새 양식',body:$('#tBody').value};if(i>=0)state.settings.templates[i]=t;else state.settings.templates.push(t);save();openSettings()},
+  delTpl:el=>{state.settings.templates.splice(+el.dataset.i,1);save();openSettings()},
+  exportData, resetAll:async()=>{if(!confirm('정말 모든 데이터를 지울까요? 되돌릴 수 없어요.'))return;
+    state={villas:[],jobs:[],complaints:[],bills:[],settings:{...state.settings}};if(db)await idb('photos','readwrite',s=>s.clear());photoCache.clear();await save();closeSheet();render();toast('모든 데이터를 지웠어요')},
+};
+document.addEventListener('click',e=>{
+  if(e.target.closest('a[href]'))return;
+  const el=e.target.closest('[data-act]');if(!el)return;
+  const f=A[el.dataset.act];if(f){e.preventDefault();f(el,e)}
+});
+document.addEventListener('submit',e=>e.preventDefault());
+document.addEventListener('input',e=>{
+  if(e.target.id==='scanText'){scan.text=e.target.value;clearTimeout(A._t);A._t=setTimeout(()=>{const d=$('#scanDet');if(d)d.innerHTML=detHTML()},250)}
+  if(e.target.closest('#f[data-kind=bill]'))updTotal();
+});
+document.addEventListener('change',async e=>{
+  const t=e.target;
+  if(t.matches('[data-scan]')&&t.files[0]){const f=t.files[0];t.value='';handleScanFile(f)}
+  else if(t.matches('[data-addphoto]')){const files=[...t.files];t.value='';for(const f of files){try{formPhotos.push(await putPhoto(await compress(f)))}catch{toast('사진을 추가하지 못했어요')}}refreshStrip()}
+  else if(t.matches('[data-import]')&&t.files[0]){importData(t.files[0]);t.value=''}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('#viewer.on'))A.closeViewer();else closeSheet()}});
+
+/* ---------- boot ---------- */
+(async()=>{
+  const saved=await load();
+  state=saved||seed();
+  if(!saved)save();
+  state.settings.templates??=DEFAULT_TPL.map(x=>({...x}));
+  // 이전 버전(빌라를 목록에서 선택) 데이터 → 빌라 이름으로 변환
+  let migrated=false;
+  for(const r of[...state.jobs,...state.complaints,...state.bills])if('villaId' in r){r.villa=r.villa||state.villas.find(v=>v.id===r.villaId)?.name||'';delete r.villaId;migrated=true}
+  if(migrated)save();
+  renderNav();render();
+  setTimeout(()=>$('#splash').classList.add('hide'),1100);
+  setTimeout(()=>$('#splash').remove(),1700);
+})();
+</script>
+</body>
+</html>
