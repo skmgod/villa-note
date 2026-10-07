@@ -53,6 +53,25 @@ a{color:inherit;text-decoration:none}
 .stat b{display:block;font-size:22px;font-weight:900;margin-top:2px;letter-spacing:-.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stat b small{font-size:13px;font-weight:500;margin-left:1px}
 .red{color:var(--red)}.orange{color:var(--orange)}
+/* 요약 카드 캐릭터 */
+.stat{display:flex;flex-direction:column;align-items:center;text-align:center;padding:10px 6px 12px;position:relative;overflow:hidden}
+.stat::before{content:"";position:absolute;left:50%;top:-34px;width:110px;height:94px;transform:translateX(-50%);border-radius:50%;background:var(--sbg,#F2F4F7)}
+.stat.s-blue{--sbg:#EAF1FD}.stat.s-red{--sbg:#FDEEEE}.stat.s-pink{--sbg:#FFF0F3}
+.stat .char{position:relative;width:58px;height:58px;margin-bottom:4px;animation:bob 2.6s ease-in-out infinite}
+.stat:nth-child(2) .char{animation-delay:-.9s}.stat:nth-child(3) .char{animation-delay:-1.7s}
+.stat span,.stat b{position:relative}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.char-wave{transform-origin:47px 47px;animation:wave 1.6s ease-in-out infinite}
+@keyframes wave{0%,100%{transform:rotate(0)}50%{transform:rotate(-14deg)}}
+.char-coin{animation:coin 2.2s ease-in infinite}
+@keyframes coin{0%{transform:translateY(-6px);opacity:0}25%{opacity:1}70%{transform:translateY(14px);opacity:1}85%,100%{transform:translateY(16px);opacity:0}}
+.char-alert{transform-origin:10px 14px;animation:alertp 1.2s ease-in-out infinite}
+@keyframes alertp{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+.char-sweat{animation:sweat 2s ease-in infinite}
+@keyframes sweat{0%,30%{transform:translateY(0);opacity:0}45%{opacity:1}100%{transform:translateY(8px);opacity:0}}
+.char-spark{transform-origin:center;transform-box:fill-box;animation:spark 1.8s ease-in-out infinite}
+@keyframes spark{0%,100%{transform:scale(.6);opacity:.4}50%{transform:scale(1.1);opacity:1}}
+@media (prefers-reduced-motion:reduce){.stat .char,.char *{animation:none!important}}
 .quick{display:flex;gap:6px;overflow-x:auto;padding:22px 0 6px;scrollbar-width:none}
 .quick::-webkit-scrollbar{display:none}
 .q{flex:1 0 64px;display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12.5px;font-weight:500;color:var(--text)}
@@ -364,8 +383,28 @@ const photoCache=new Map();
 async function putPhoto(dataUrl){const id='ph_'+uid();photoCache.set(id,dataUrl);if(db)await idb('photos','readwrite',s=>s.put(dataUrl,id));return id}
 async function getPhoto(id){if(photoCache.has(id))return photoCache.get(id);if(!db)return '';const v=await idb('photos','readonly',s=>s.get(id));if(v)photoCache.set(id,v);return v||''}
 async function save(){try{if(db)await idb('kv','readwrite',s=>s.put(state,'state'));else localStorage.setItem('villanote',JSON.stringify(state))}catch(e){toast('저장 실패: '+e.message)}}
-async function load(){try{db=await openDB()}catch{db=null}
-  try{return db?await idb('kv','readonly',s=>s.get('state')):JSON.parse(localStorage.getItem('villanote')||'null')}catch{return null}}
+// 읽기 실패와 "데이터 없음"을 구분: 실패했을 때는 절대 새 데이터로 덮어쓰지 않음
+let loadFailed=false;
+const DATA_VERSION=2; // 데이터 모양이 바뀌는 업데이트 때만 올림 (올리기 전 기록은 자동 보관)
+async function load(){
+  try{db=await openDB()}catch{db=null}
+  for(let i=0;i<3;i++){
+    try{return db?await idb('kv','readonly',s=>s.get('state')):JSON.parse(localStorage.getItem('villanote')||'null')}
+    catch{await new Promise(r=>setTimeout(r,400))}
+  }
+  loadFailed=true;return null;
+}
+// 하루 한 번 자동 백업 (최근 14일 보관) — 업데이트·실수로 지운 경우 되돌리기용
+const SNAP_KEEP=14;
+async function listSnaps(){if(!db)return[];const keys=await idb('kv','readonly',s=>s.getAllKeys());return keys.filter(k=>String(k).startsWith('snap_')).sort().reverse()}
+async function autoSnapshot(){
+  if(!db)return;
+  try{
+    const key='snap_'+todayStr(),keys=await listSnaps();
+    if(!keys.includes(key))await idb('kv','readwrite',s=>s.put(JSON.parse(JSON.stringify(state)),key));
+    for(const old of (await listSnaps()).slice(SNAP_KEEP))await idb('kv','readwrite',s=>s.delete(old));
+  }catch{}
+}
 async function hydrate(root=document){for(const img of $$('img[data-photo]:not([src])',root)){img.src=await getPhoto(img.dataset.photo)}}
 
 /* ---------- state ---------- */
@@ -434,6 +473,66 @@ function bCard(b){
     <div class="bill-amt">${won(billSum(b).total)}</div>
   </div>`}
 
+/* ---------- 캐릭터 (요약 카드) ---------- */
+const EYE='#3A2A1A';
+const eyes=(happy,x1,x2,y)=>happy
+  ?`<path d="M${x1-2.4} ${y+.6}q2.4-3 4.8 0M${x2-2.4} ${y+.6}q2.4-3 4.8 0" stroke="${EYE}" stroke-width="2" fill="none" stroke-linecap="round"/>`
+  :`<circle cx="${x1}" cy="${y}" r="2" fill="${EYE}"/><circle cx="${x2}" cy="${y}" r="2" fill="${EYE}"/><circle cx="${x1+.7}" cy="${y-.7}" r=".6" fill="#fff"/><circle cx="${x2+.7}" cy="${y-.7}" r=".6" fill="#fff"/>`;
+// 오늘 일정: 안전모 쓴 수리 반장 (남은 일정 없으면 웃는 눈 + 엄지척)
+function charWorker(left){
+  const done=left===0;
+  return `<svg class="char" viewBox="0 0 64 64" aria-hidden="true">
+    <ellipse cx="32" cy="61" rx="15" ry="2.4" fill="#000" opacity=".07"/>
+    <path d="M15 60c0-10 7.6-16 17-16s17 6 17 16z" fill="#2B5285"/>
+    <path d="M25 45v15M39 45v15" stroke="#1E3A5F" stroke-width="2.4"/>
+    <rect x="27.5" y="50" width="9" height="6" rx="1.5" fill="#FFC933"/>
+    <circle cx="32" cy="30" r="13.5" fill="#FFDDBE"/>
+    <path d="M17.5 28a14.5 14.5 0 0 1 29 0z" fill="#FFC933"/>
+    <rect x="14.5" y="26" width="35" height="4.2" rx="2.1" fill="#F2B01E"/>
+    <rect x="30" y="14.5" width="4" height="11" rx="2" fill="#F2B01E"/>
+    ${eyes(done,26.5,37.5,34)}
+    <circle cx="22.8" cy="38" r="2.3" fill="#FF9E9E" opacity=".55"/><circle cx="41.2" cy="38" r="2.3" fill="#FF9E9E" opacity=".55"/>
+    <path d="${done?'M27.5 38.5q4.5 5 9 0':'M29 39.5q3 2.4 6 0'}" stroke="${EYE}" stroke-width="2" fill="${done?'#fff':'none'}" stroke-linecap="round"/>
+    ${done
+      ?`<g class="char-wave"><circle cx="52" cy="44" r="4.5" fill="#FFDDBE"/><rect x="50.6" y="35.5" width="3" height="7" rx="1.5" fill="#FFDDBE"/></g>`
+      :`<g class="char-wave"><path d="M47 47l7-7" stroke="#9AA3AE" stroke-width="3.2" stroke-linecap="round"/><path d="M52.5 35.5a3.6 3.6 0 1 0 5 5l-2.2-.6-.8-2.2z" fill="#9AA3AE"/></g>`}
+  </svg>`;
+}
+// 미처리 민원: 집 캐릭터 (민원 있으면 땀 + 느낌표, 없으면 반짝)
+function charHouse(n){
+  const ok=n===0;
+  return `<svg class="char" viewBox="0 0 64 64" aria-hidden="true">
+    <ellipse cx="32" cy="61" rx="17" ry="2.4" fill="#000" opacity=".07"/>
+    <rect x="14" y="28" width="36" height="31" rx="7" fill="#fff" stroke="#1E3A5F" stroke-width="2.4"/>
+    <path d="M9.5 32.5L32 12.5l22.5 20" fill="none" stroke="${ok?'#18A058':'#E5484D'}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="42" y="14" width="6" height="10" rx="1.5" fill="#1E3A5F"/>
+    ${ok?eyes(true,25.5,38.5,40):`<path d="M22.5 35.5l5 1.6M41.5 35.5l-5 1.6" stroke="${EYE}" stroke-width="1.8" stroke-linecap="round"/>${eyes(false,25.5,38.5,40.5)}`}
+    <circle cx="21.5" cy="45" r="2.3" fill="#FF9E9E" opacity=".55"/><circle cx="42.5" cy="45" r="2.3" fill="#FF9E9E" opacity=".55"/>
+    <path d="${ok?'M27.5 46q4.5 4.6 9 0':'M27.5 48q2.2-2.4 4.5 0t4.5 0'}" stroke="${EYE}" stroke-width="2" fill="none" stroke-linecap="round"/>
+    ${ok
+      ?`<path class="char-spark" d="M54 6l1.3 3.7L59 11l-3.7 1.3L54 16l-1.3-3.7L49 11l3.7-1.3zM9 15l.9 2.4 2.4.9-2.4.9L9 21.6l-.9-2.4-2.4-.9 2.4-.9z" fill="#FFC933"/>`
+      :`<path class="char-sweat" d="M52 30q3.6 5.2 0 7.6q-3.6-2.4 0-7.6z" fill="#7CC4FF"/><g class="char-alert"><circle cx="10" cy="14" r="7" fill="#E5484D"/><rect x="8.9" y="9" width="2.2" height="6.4" rx="1.1" fill="#fff"/><circle cx="10" cy="18" r="1.3" fill="#fff"/></g>`}
+  </svg>`;
+}
+// 미수금: 돼지 저금통 (받을 돈 있으면 동전이 떨어지고, 다 받으면 웃음)
+function charPig(amount){
+  const ok=amount===0;
+  return `<svg class="char" viewBox="0 0 64 64" aria-hidden="true">
+    <ellipse cx="32" cy="61" rx="18" ry="2.4" fill="#000" opacity=".07"/>
+    ${ok?'':`<g class="char-coin"><circle cx="30" cy="12" r="6.5" fill="#FFC933" stroke="#E0A800" stroke-width="1.6"/><path d="M27.3 9.8l1.4 4.6 1.3-3.4 1.3 3.4 1.4-4.6M27 12h6" stroke="#9A6B00" stroke-width="1.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>`}
+    <path d="M17 27l2-8 7 5z" fill="#FF9EB3"/>
+    <rect x="18" y="52" width="6" height="8" rx="2.5" fill="#FF9EB3"/><rect x="38" y="52" width="6" height="8" rx="2.5" fill="#FF9EB3"/>
+    <ellipse cx="31" cy="40" rx="20" ry="15.5" fill="#FFB8C7"/>
+    <rect x="25" y="25.6" width="10" height="2.6" rx="1.3" fill="#E77F98"/>
+    <path d="M10.5 39q-4 0-3.5 4" stroke="#FF9EB3" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    <ellipse cx="48" cy="41" rx="5.6" ry="4.6" fill="#FF8FA8"/><circle cx="46.3" cy="41" r="1.1" fill="#C9506D"/><circle cx="49.7" cy="41" r="1.1" fill="#C9506D"/>
+    ${ok?`<path d="M36.6 34.6q2.4-3 4.8 0" stroke="${EYE}" stroke-width="2" fill="none" stroke-linecap="round"/>`:`<circle cx="39" cy="34.5" r="2" fill="${EYE}"/><circle cx="39.7" cy="33.8" r=".6" fill="#fff"/>`}
+    <circle cx="36" cy="41.5" r="2.4" fill="#FF7E9C" opacity=".45"/>
+    <path d="${ok?'M40 47q3.5 2.8 6.4 0':'M41.5 47.5h4'}" stroke="${EYE}" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    ${ok?`<path class="char-spark" d="M56 18l1.1 3 3 1.1-3 1.1-1.1 3-1.1-3-3-1.1 3-1.1z" fill="#FFC933"/>`:''}
+  </svg>`;
+}
+
 /* ---------- pages ---------- */
 function renderHome(){
   const t=todayStr(),todays=jobsOn(t),left=todays.filter(j=>j.status==='예약').length;
@@ -449,9 +548,9 @@ function renderHome(){
     <button class="icon-btn round" data-act="settings" aria-label="설정">${ic('gear')}</button>
   </div>
   <div class="stats">
-    <button class="stat" data-act="go" data-p="schedule"><span>오늘 일정</span><b>${todays.length}<small>건</small></b></button>
-    <button class="stat" data-act="go" data-p="complaints"><span>미처리 민원</span><b class="red">${openC.length}<small>건</small></b></button>
-    <button class="stat" data-act="go" data-p="bills"><span>미수금</span><b class="orange">${shortWon(unpaid)}</b></button>
+    <button class="stat s-blue" data-act="go" data-p="schedule">${charWorker(left)}<span>오늘 일정</span><b>${todays.length}<small>건</small></b></button>
+    <button class="stat s-red" data-act="go" data-p="complaints">${charHouse(openC.length)}<span>미처리 민원</span><b class="red">${openC.length}<small>건</small></b></button>
+    <button class="stat s-pink" data-act="go" data-p="bills">${charPig(unpaid)}<span>미수금</span><b class="orange">${shortWon(unpaid)}</b></button>
   </div>
   <div class="quick">
     ${q('newJob','cal','일정 등록','var(--blue)')}${q('newC','alert','민원 접수','var(--red)')}${q('newBill','bill','수리비 청구','var(--orange)')}${q('goScan','text','사진→글자','var(--brand)')}${q('villas','building','빌라 관리','var(--green)')}
@@ -1134,9 +1233,19 @@ function openSettings(){
     ${S.templates.map((t,i)=>`<div class="list-row" data-act="editTpl" data-i="${i}"><div style="min-width:0"><div class="t">${esc(t.name)}</div><div class="s" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.body.replace(/\n/g,' '))}</div></div>${ic('edit',18)}</div>`).join('')}
     <button class="btn ghost block" style="margin-top:10px" data-act="editTpl" data-i="-1">${ic('plus',18)} 양식 추가</button></div>
   <div class="set-group"><h4>데이터 백업</h4>
-    <p class="hint" style="margin:0 0 10px">모든 기록은 이 휴대폰 안에만 저장돼요. 휴대폰을 바꾸거나 앱 데이터를 지우기 전에 꼭 백업하세요.</p>
+    <p class="hint" style="margin:0 0 10px">앱을 업데이트해도 기록은 그대로 남아요. 매일 처음 열 때 자동 백업도 해 둬요(최근 ${SNAP_KEEP}일). 다만 휴대폰을 바꾸거나 브라우저 데이터를 지우면 사라지니 그 전에 백업 파일을 저장하세요.</p>
+    <button class="btn ghost block" style="margin-bottom:8px" data-act="snaps">${ic('cal',18)} 자동 백업에서 되돌리기</button>
     <div class="row2"><button class="btn ghost" data-act="exportData">백업 파일 저장</button><label class="btn ghost" style="cursor:pointer">백업 불러오기<input type="file" accept=".json,application/json" hidden data-import></label></div>
     <button class="btn danger block" style="margin-top:10px" data-act="resetAll">모든 데이터 지우기</button></div>`);
+}
+async function openSnaps(){
+  const keys=await listSnaps(),snaps=[];
+  for(const k of keys){const s=await idb('kv','readonly',st=>st.get(k));if(s)snaps.push({k,s})}
+  const cnt=s=>`일정 ${s.jobs?.length||0} · 민원 ${s.complaints?.length||0} · 청구 ${s.bills?.length||0} · 빌라 ${s.villas?.length||0}`;
+  openSheet('자동 백업',`<p class="hint" style="margin:0 0 10px">그날 앱을 처음 열었을 때의 기록이에요. 되돌리면 지금 기록은 "되돌리기 직전" 백업으로 따로 보관돼요.</p>
+    <div class="list-row" style="cursor:default"><div><div class="t">지금</div><div class="s">${cnt(state)}</div></div></div>
+    ${snaps.map(({k,s})=>`<div class="list-row" data-act="restoreSnap" data-k="${esc(k)}"><div><div class="t">${k==='snap_before_restore'?'되돌리기 직전':fmtDate(k.slice(5),true)}</div><div class="s">${cnt(s)}</div></div><span class="btn sm ghost">되돌리기</span></div>`).join('')||'<div class="empty">아직 자동 백업이 없어요</div>'}`,
+    `<button class="btn ghost" data-act="settings">설정으로</button>`);
 }
 function provBox(p){
   return p==='gemini'
@@ -1256,6 +1365,11 @@ const A={
   testAi:async el=>{A.saveAiKey();if(!aiKey())return;el.disabled=true;el.textContent='확인 중…';
     try{const m=aiProvider()==='gemini'?' ('+await pickGeminiModel()+')':'';const r=await aiExtract('내일 오후 3시 하늘빌라 201호 싱크대 막힘');toast(r.length?`${aiName()}${m} 연결 성공! → ${fmtDate(r[0].date)} ${fmtTime(r[0].time)} ${r[0].title}`:'연결은 됐지만 결과가 비어 있어요')}catch(e){toast(e.message)}
     el.disabled=false;el.textContent='연결 테스트'},
+  snaps:()=>openSnaps(),
+  restoreSnap:async el=>{const k=el.dataset.k;const s=await idb('kv','readonly',st=>st.get(k));if(!s)return;
+    if(!confirm(`${k==='snap_before_restore'?'되돌리기 직전':fmtDate(k.slice(5),true)} 기록으로 되돌릴까요?\n지금 기록은 "되돌리기 직전"으로 따로 보관돼요.`))return;
+    await idb('kv','readwrite',st=>st.put(JSON.parse(JSON.stringify(state)),'snap_before_restore'));
+    state=s;await save();closeSheet();go('home');toast('되돌렸어요')},
   editVilla:el=>villaForm(state.villas.find(v=>v.id===el.dataset.id)||{}),
   saveVilla:()=>{const o=formData();if(!o.name){toast('빌라 이름을 입력해 주세요');return}const v=state.villas.find(x=>x.id===o.id);if(v)Object.assign(v,o);else state.villas.push({...o,id:uid()});save();render();openVillas();toast('저장했어요')},
   delVilla:el=>{const id=el.dataset.id;
@@ -1295,13 +1409,28 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('#viewer.on'))
 /* ---------- boot ---------- */
 (async()=>{
   const saved=await load();
-  state=saved||seed();
-  if(!saved)save();
+  if(loadFailed){
+    // 저장된 기록을 못 읽었을 때: 빈 화면으로 시작하되 저장은 막아서 기존 기록을 지키기
+    state=seed();state.villas=[];state.jobs=[];state.complaints=[];state.bills=[];
+    window.save=async()=>toast('기록을 불러오지 못해 저장을 멈췄어요. 앱을 껐다 켜 주세요');
+    setTimeout(()=>toast('저장된 기록을 불러오지 못했어요. 앱을 완전히 껐다 다시 켜 주세요'),1500);
+  }else{
+    state=saved||seed();
+    if(!saved)save();
+  }
+  // 업데이트로 데이터 모양이 바뀌어도 기존 기록은 그대로 옮김 (빠진 칸만 채움)
+  state.villas??=[];state.jobs??=[];state.complaints??=[];state.bills??=[];
+  state.settings=Object.assign({bizName:'빌라노트',myPhone:'',account:''},state.settings||{});
   state.settings.templates??=DEFAULT_TPL.map(x=>({...x}));
-  // 이전 버전(빌라를 목록에서 선택) 데이터 → 빌라 이름으로 변환
   let migrated=false;
+  if((state.v||1)<DATA_VERSION&&saved&&db){try{await idb('kv','readwrite',s=>s.put(JSON.parse(JSON.stringify(saved)),'before_update_v'+(state.v||1)))}catch{}}
+  // 이전 버전(빌라를 목록에서 선택) 데이터 → 빌라 이름으로 변환
   for(const r of[...state.jobs,...state.complaints,...state.bills])if('villaId' in r){r.villa=r.villa||state.villas.find(v=>v.id===r.villaId)?.name||'';delete r.villaId;migrated=true}
-  if(migrated)save();
+  if((state.v||1)<DATA_VERSION){state.v=DATA_VERSION;migrated=true}
+  if(migrated&&!loadFailed)save();
+  if(!loadFailed)autoSnapshot();
+  // 휴대폰이 저장공간 정리할 때 이 앱 기록은 지우지 않도록 요청
+  try{navigator.storage?.persist?.()}catch{}
   renderNav();$('#qIc').innerHTML=ic('search',20);$('#qClr').innerHTML=ic('x',16);render();
   setTimeout(()=>$('#splash').classList.add('hide'),1100);
   setTimeout(()=>$('#splash').remove(),1700);
