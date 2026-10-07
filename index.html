@@ -40,7 +40,7 @@ a{color:inherit;text-decoration:none}
 @keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
 
 /* home */
-.home-top{display:flex;justify-content:space-between;align-items:flex-start;padding:28px 0 18px}
+.home-top{display:flex;justify-content:space-between;align-items:flex-start;padding:14px 0 18px}
 .home-top .today{color:var(--sub);font-size:13px;font-weight:500}
 .home-top h1{margin:6px 0 0;font-size:24px;line-height:1.35;font-weight:900;letter-spacing:-.6px;color:var(--brand)}
 .home-top h1 em{font-style:normal;background:linear-gradient(transparent 58%,var(--accent) 58%)}
@@ -97,7 +97,7 @@ section{margin-top:26px}
 .empty .btn{margin-top:12px}
 
 /* page head */
-.page-head{display:flex;justify-content:space-between;align-items:center;padding:24px 0 14px}
+.page-head{display:flex;justify-content:space-between;align-items:center;padding:12px 0 14px}
 .page-head h2{margin:0;font-size:22px;font-weight:900;letter-spacing:-.5px;color:var(--brand)}
 .page-head p{margin:4px 0 0;font-size:13px;color:var(--sub)}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:44px;padding:0 16px;border-radius:14px;font-weight:700;font-size:14.5px;white-space:nowrap}
@@ -166,6 +166,10 @@ section{margin-top:26px}
 .fld input:focus,.fld select:focus,.fld textarea:focus,.result textarea:focus{border-color:var(--brand);background:#fff}
 .fld textarea,.result textarea{resize:vertical;line-height:1.5}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row2.villa-row{grid-template-columns:1.6fr 1fr}
+.fld input.villa-big{font-size:20px;font-weight:900;color:var(--brand);padding:13px 14px;border:2px solid var(--accent);background:var(--accent-soft)}
+.fld input.villa-big:focus{border-color:var(--brand);background:#fff}
+.fld input.villa-big::placeholder{font-weight:500;color:#b5a571;font-size:17px}
 .seg{display:flex;background:var(--gray-soft);border-radius:12px;padding:3px}
 .seg label{flex:1}
 .seg input{display:none}
@@ -218,7 +222,7 @@ section{margin-top:26px}
 .dup-warn{margin-top:8px;font-size:12.5px;color:var(--orange);background:var(--orange-soft);padding:6px 10px;border-radius:10px}
 
 /* search */
-.search{position:sticky;top:0;z-index:30;background:var(--bg);padding:12px 0 4px;margin:0 -2px}
+.search{position:sticky;top:0;z-index:30;background:var(--bg);padding:10px 16px 6px}
 .search-box{display:flex;align-items:center;gap:8px;background:#fff;border-radius:16px;padding:0 12px;height:48px;box-shadow:0 1px 4px rgba(0,0,0,.07);border:1.5px solid transparent}
 .search-box:focus-within{border-color:var(--brand)}
 .search-box input{flex:1;border:0;outline:0;font-size:16px;background:none;min-width:0}
@@ -268,7 +272,9 @@ mark{background:var(--accent);color:inherit;border-radius:3px;padding:0 1px}
 </div>
 
 <div id="app">
-  <main>
+  <div class="search" id="topSearch"><div class="search-box"><span id="qIc"></span><input id="q" type="search" enterkeyhint="search" autocomplete="off" placeholder="빌라 이름·전화번호·작업 내용·호수 검색"><button class="icon-btn" data-act="clearQ" aria-label="지우기" style="width:30px;height:30px;display:none" id="qClr"></button></div></div>
+  <div id="searchRes" class="page"></div>
+  <main id="mainPages">
     <div class="page" id="p-home"></div>
     <div class="page" id="p-schedule"></div>
     <div class="page" id="p-scan"></div>
@@ -306,6 +312,16 @@ function fmtTimeShort(t){if(!t)return '시간 미정';const[h,m]=t.split(':').ma
 const won=n=>(Math.round(n)||0).toLocaleString('ko-KR')+'원';
 const shortWon=n=>n>=10000?(n/10000).toFixed(n%10000?1:0).replace(/\.0$/,'')+'만원':won(n);
 const tel=p=>String(p||'').replace(/[^\d+]/g,'');
+// 010-1234-5678, 02-123-4567, 031-123-4567, 1588-1234 형식으로 하이픈 넣기
+function fmtPhone(v){
+  const d=String(v||'').replace(/\D/g,'').slice(0,11);
+  if(!d)return '';
+  if(/^1[5-9]/.test(d)&&d.length<=8)return d.length>4?d.slice(0,4)+'-'+d.slice(4):d;
+  if(d.startsWith('02')){if(d.length<3)return d;if(d.length<6)return `02-${d.slice(2)}`;if(d.length<10)return `02-${d.slice(2,5)}-${d.slice(5)}`;return `02-${d.slice(2,6)}-${d.slice(6,10)}`}
+  if(d.length<4)return d;if(d.length<7)return `${d.slice(0,3)}-${d.slice(3)}`;
+  if(d.length<11)return `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}`;
+  return `${d.slice(0,3)}-${d.slice(3,7)}-${d.slice(7)}`;
+}
 const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent);
 
 const IC={
@@ -390,11 +406,11 @@ function renderNav(){$('#nav').innerHTML=NAV.map(([p,i,l])=>p==='scan'
   :`<button data-act="go" data-p="${p}">${ic(i,24)}${l}</button>`).join('')}
 function render(){
   ({home:renderHome,schedule:renderSchedule,scan:renderScan,complaints:renderComplaints,bills:renderBills})[cur]();
-  $$('.page').forEach(p=>p.classList.toggle('on',p.id==='p-'+cur));
+  $$('main .page').forEach(p=>p.classList.toggle('on',p.id==='p-'+cur));
   $$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.p===cur));
   hydrate();
 }
-function go(p){cur=p;render();window.scrollTo(0,0)}
+function go(p){if(searchQ){searchQ='';$('#q').value='';updSearch()}cur=p;render();window.scrollTo(0,0)}
 
 /* ---------- cards ---------- */
 const empty=(msg,act,label)=>`<div class="empty">${msg}${act?`<br><button class="btn sm primary" data-act="${act}">${ic('plus',16)} ${label}</button>`:''}</div>`;
@@ -427,9 +443,6 @@ function renderHome(){
   const held=state.jobs.filter(j=>j.status==='보류').sort(byDT);
   const q=(act,icon,label,color)=>`<button class="q" data-act="${act}"><span class="circle" style="color:${color}">${ic(icon,26)}</span>${label}</button>`;
   $('#p-home').innerHTML=`
-  <div class="search"><div class="search-box">${ic('search',20)}<input id="q" type="search" enterkeyhint="search" autocomplete="off" value="${esc(searchQ)}" placeholder="건물·주소·전화번호·작업·날짜·금액 통합검색"><button class="icon-btn" data-act="clearQ" aria-label="지우기" style="width:30px;height:30px;${searchQ?'':'display:none'}">${ic('x',16)}</button></div></div>
-  <div id="searchRes"></div>
-  <div id="homeBody">
   <div class="home-top">
     <div><div class="today">${fmtDate(t,true)}</div>
     <h1>${esc(state.settings.bizName)}님,<br>${left?`<em>오늘 일정 ${left}건</em> 남았어요`:'<em>오늘 일정 모두 끝!</em>'}</h1></div>
@@ -453,8 +466,7 @@ function renderHome(){
   ${upcoming.length?`<section><div class="sec-head"><h2>다가오는 일정</h2></div>${upcoming.map(j=>jobCard(j,true)).join('')}</section>`:''}
   ${held.length?`<section><div class="sec-head"><h2>보류 중인 일정 <small style="color:#7C3AED">${held.length}</small></h2></div>${held.map(j=>jobCard(j,true)).join('')}</section>`:''}
   ${openC.length?`<section><div class="sec-head"><h2>처리할 민원</h2><button data-act="go" data-p="complaints">전체보기 ›</button></div>${openC.slice(0,3).map(cCard).join('')}</section>`:''}
-  </div>`;
-  if(searchQ)updSearch();
+`;
 }
 
 /* ---------- 통합검색 ---------- */
@@ -478,11 +490,11 @@ function searchAll(q){
   return R;
 }
 function updSearch(){
-  const box=$('#searchRes'),body=$('#homeBody'),clr=$('[data-act=clearQ]');if(!box)return;
+  const box=$('#searchRes'),body=$('#mainPages'),clr=$('#qClr');
   const R=searchAll(searchQ);
   if(clr)clr.style.display=searchQ?'':'none';
-  if(!R){box.innerHTML='';body.style.display='';return}
-  body.style.display='none';
+  if(!R){box.innerHTML='';box.classList.remove('on');body.style.display='';return}
+  body.style.display='none';box.classList.add('on');
   const n=R.jobs.length+R.complaints.length+R.bills.length+R.villas.length;
   const grp=(title,arr,fn,go)=>arr.length?`<div class="sr-group"><h3>${title} <small>${arr.length}건</small></h3>${arr.slice(0,30).map(fn).join('')}${arr.length>30?`<p class="hint">최근 30건만 보여요. 검색어를 더 자세히 입력해 보세요.</p>`:''}</div>`:'';
   box.innerHTML=n?`<p class="hint" style="margin:10px 0 0">"${esc(searchQ)}" 검색 결과 ${n}건</p>
@@ -954,7 +966,7 @@ function openSheet(title,body,foot=''){
 function closeSheet(){stopRec(true);$('#sheet').classList.remove('on');document.body.style.overflow=''}
 const fld=(label,inner)=>`<div class="fld"><span class="fl">${label}</span>${inner}</div>`;
 const seg=(name,opts,val)=>`<div class="seg">${opts.map(o=>`<label><input type="radio" name="${name}" value="${o}" ${o===val?'checked':''}><span>${o}</span></label>`).join('')}</div>`;
-const villaInput=v=>`<input name="villa" list="villaList" value="${esc(v)}" placeholder="예) 하늘빌라" autocomplete="off"><datalist id="villaList">${state.villas.map(x=>`<option value="${esc(x.name)}">`).join('')}</datalist>`;
+const villaInput=v=>`<input name="villa" class="villa-big" list="villaList" value="${esc(v)}" placeholder="예) 하늘빌라" autocomplete="off"><datalist id="villaList">${state.villas.map(x=>`<option value="${esc(x.name)}">`).join('')}</datalist>`;
 const photoStrip=()=>`<div class="photos" id="photoStrip">${formPhotos.map(id=>`<div class="ph"><img data-photo="${id}" data-act="viewPhoto" data-id="${id}" alt=""><button type="button" data-act="rmPhoto" data-id="${id}">×</button></div>`).join('')}<label class="ph add">${ic('cam',22)}<span>사진 추가</span><input type="file" accept="image/*" multiple hidden data-addphoto></label></div>`;
 function refreshStrip(){const el=$('#photoStrip');if(el){el.outerHTML=photoStrip();hydrate($('#sheet'))}}
 function formData(){const f=$('#f');const o={};new FormData(f).forEach((v,k)=>o[k]=typeof v==='string'?v.trim():v);return o}
@@ -963,7 +975,7 @@ function formData(){const f=$('#f');const o={};new FormData(f).forEach((v,k)=>o[
 function jobForm(j={}){
   openSheet(j.id?'일정 수정':'일정 등록',`<form id="f" data-kind="job">
     ${j.id?`<div class="mini-row"><button type="button" class="btn ghost" data-act="holdJob" data-id="${j.id}" style="color:#7C3AED">${ic(j.status==='보류'?'cal':'pause',18)} ${j.status==='보류'?'예약으로 되돌리기':'보류하기'}</button><button type="button" class="btn danger" data-act="delJob" data-id="${j.id}">${ic('trash',18)} 삭제</button></div>`:`<div class="mini-row"><button type="button" class="btn yellow" data-act="voice">${ic('mic',18)} 말로 입력하기</button></div>`}
-    <div class="row2">${fld('빌라',villaInput(j.villa))}${fld('호수',`<input name="unit" value="${esc(j.unit)}" placeholder="301호 / 공용">`)}</div>
+    <div class="row2 villa-row">${fld('🏢 빌라 이름',villaInput(j.villa))}${fld('호수',`<input name="unit" value="${esc(j.unit)}" placeholder="301호 / 공용">`)}</div>
     <div class="row2">${fld('날짜',`<input type="date" name="date" value="${j.date||selDate}">`)}${fld('시간',`<input type="time" name="time" value="${j.time||''}">`)}</div>
     ${fld('작업 내용',`<input name="title" value="${esc(j.title)}" placeholder="예) 욕실 누수 점검">`)}
     ${fld('연락처',`<input name="contact" type="tel" inputmode="tel" value="${esc(j.contact)}" placeholder="010-0000-0000">`)}
@@ -989,9 +1001,9 @@ const jobCtx=j=>({빌라:(j.villa||""),호수:j.unit,날짜:fmtDate(j.date),시�
 function cForm(c={}){
   formPhotos=[...(c.photos||[])];
   openSheet(c.id?'민원 상세':'민원 접수',`<form id="f" data-kind="c">
-    <div class="row2">${fld('빌라',villaInput(c.villa))}${fld('호수',`<input name="unit" value="${esc(c.unit)}" placeholder="302호 / 공용">`)}</div>
+    ${fld('🏢 빌라 이름',villaInput(c.villa))}
+    <div class="row2">${fld('호수',`<input name="unit" value="${esc(c.unit)}" placeholder="302호 / 공용">`)}${fld('접수일',`<input type="date" name="date" value="${c.date||todayStr()}">`)}</div>
     <div class="row2">${fld('신고자',`<input name="reporter" value="${esc(c.reporter)}" placeholder="세입자, 건물주 등">`)}${fld('연락처',`<input name="phone" type="tel" inputmode="tel" value="${esc(c.phone)}" placeholder="010-0000-0000">`)}</div>
-    ${fld('접수일',`<input type="date" name="date" value="${c.date||todayStr()}">`)}
     ${fld('민원 제목',`<input name="title" value="${esc(c.title)}" placeholder="예) 보일러 온수 안 나옴">`)}
     ${fld('상세 내용',`<textarea name="content" rows="4">${esc(c.content)}</textarea>`)}
     ${fld('현장 사진',photoStrip())}
@@ -1020,7 +1032,7 @@ function billForm(b={}){
   formPhotos=[...(b.photos||[])];
   const items=b.items?.length?b.items:[{name:'',qty:1,price:''}];
   openSheet(b.id?'청구서 수정':'청구서 작성',`<form id="f" data-kind="bill">
-    <div class="row2">${fld('빌라',villaInput(b.villa))}${fld('호수',`<input name="unit" value="${esc(b.unit)}" placeholder="201호 / 공용">`)}</div>
+    <div class="row2 villa-row">${fld('🏢 빌라 이름',villaInput(b.villa))}${fld('호수',`<input name="unit" value="${esc(b.unit)}" placeholder="201호 / 공용">`)}</div>
     <div class="row2">${fld('청구 대상',`<input name="to" value="${esc(b.to)}" placeholder="건물주, 세입자">`)}${fld('연락처',`<input name="phone" type="tel" inputmode="tel" value="${esc(b.phone)}" placeholder="010-0000-0000">`)}</div>
     <div class="row2">${fld('작업일',`<input type="date" name="date" value="${b.date||todayStr()}">`)}${fld('작업 내용',`<input name="title" value="${esc(b.title)}" placeholder="누수 배관 교체">`)}</div>
     <div class="fld"><span class="fl">청구 항목</span>
@@ -1047,6 +1059,23 @@ function saveBill(){
   let b=state.bills.find(x=>x.id===o.id);
   if(b)Object.assign(b,o);else{b={...o,id:uid()};state.bills.push(b);$('#f [name=id]').value=b.id}
   save();render();return b;
+}
+// 일정·민원이 "완료"되면 청구서를 자동으로 만들어 열어 줌 (이미 연결된 청구서가 있으면 그걸 엶)
+function autoBill(rec,kind){
+  const C=kind==='c'?rec:rec.complaintId?state.complaints.find(c=>c.id===rec.complaintId):null;
+  const J=kind==='job'?rec:state.jobs.find(j=>j.complaintId===rec.id&&j.status!=='취소');
+  let b=[rec.billId,C?.billId,J?.billId].map(id=>id&&state.bills.find(x=>x.id===id)).find(Boolean),made=false;
+  if(!b){
+    b={id:uid(),villa:rec.villa||'',unit:rec.unit||'',to:C?.reporter||'',phone:(kind==='c'?rec.phone:rec.contact)||C?.phone||J?.contact||'',
+      date:(J?.date&&J.date<=todayStr()?J.date:todayStr()),title:rec.title||'',items:[{name:rec.title||'수리',qty:1,price:''}],vat:false,
+      memo:[C?.content,J?.memo].filter(Boolean).join('\n'),status:'미청구',photos:[...(C?.photos||[])],jobId:J?.id||'',complaintId:C?.id||''};
+    state.bills.push(b);made=true;
+  }
+  rec.billId=b.id;
+  if(C){C.billId=b.id;C.status='완료'}
+  if(J){J.billId=b.id;if(J.status!=='완료')J.status='완료'}
+  save();cur='bills';render();billForm(b);
+  toast(made?'완료! 청구서로 넘어왔어요. 금액을 넣고 저장하세요':'완료! 연결된 청구서를 열었어요');
 }
 function billText(b){
   const s=billSum(b),S=state.settings;
@@ -1148,18 +1177,20 @@ const A={
   editJob:el=>jobForm(state.jobs.find(j=>j.id===el.dataset.id)),
   editC:el=>cForm(state.complaints.find(c=>c.id===el.dataset.id)),
   editBill:el=>billForm(state.bills.find(b=>b.id===el.dataset.id)),
-  toggleJob:el=>{const j=state.jobs.find(j=>j.id===el.dataset.id);j.status=j.status==='완료'?'예약':'완료';save();render();if(j.status==='완료')toast('완료 처리했어요 ✓')},
+  toggleJob:el=>{const j=state.jobs.find(j=>j.id===el.dataset.id);if(j.status==='완료'){j.status='예약';save();render();toast('다시 예약 상태로 바꿨어요');return}j.status='완료';autoBill(j,'job')},
   smsJob:el=>{const j=state.jobs.find(j=>j.id===el.dataset.id);openSms(jobCtx(j),j.contact)},
   pickDay:el=>{selDate=el.dataset.d;render()},
   calMove:el=>{cal.m+= +el.dataset.n;if(cal.m<0){cal.m=11;cal.y--}if(cal.m>11){cal.m=0;cal.y++}render()},
   calToday:()=>{selDate=todayStr();const d=new Date();cal={y:d.getFullYear(),m:d.getMonth()};render()},
   cFilter:el=>{cFilter=el.dataset.s;render()}, bFilter:el=>{bFilter=el.dataset.s;render()},
-  saveJob:()=>{if(saveJob()){closeSheet();toast('일정을 저장했어요')}},
+  saveJob:()=>{const prev=state.jobs.find(x=>x.id===$('#f [name=id]').value)?.status;const j=saveJob();if(!j)return;
+    if(j.status==='완료'&&prev!=='완료'){autoBill(j,'job');return}closeSheet();toast('일정을 저장했어요')},
   holdJob:el=>{const j=state.jobs.find(x=>x.id===el.dataset.id);if(!j)return;j.status=j.status==='보류'?'예약':'보류';save();render();jobForm(j);toast(j.status==='보류'?'보류로 바꿨어요. 홈의 "보류 중인 일정"에서 볼 수 있어요':'다시 예약 상태로 바꿨어요')},
   delJob:el=>{if(!confirm('이 일정을 삭제할까요?'))return;state.jobs=state.jobs.filter(j=>j.id!==el.dataset.id);save();closeSheet();render()},
   jobSms:()=>{const j=saveJob();if(j)openSms(jobCtx(j),j.contact)},
   jobBill:()=>{const j=saveJob();if(j)billForm({villa:j.villa,unit:j.unit,phone:j.contact,title:j.title,date:j.date})},
-  saveC:()=>{if(saveC()){closeSheet();toast('민원을 저장했어요')}},
+  saveC:()=>{const prev=state.complaints.find(x=>x.id===$('#f [name=id]').value)?.status;const c=saveC();if(!c)return;
+    if(c.status==='완료'&&prev!=='완료'){autoBill(c,'c');return}closeSheet();toast('민원을 저장했어요')},
   delC:el=>{if(!confirm('이 민원을 삭제할까요?'))return;state.complaints=state.complaints.filter(c=>c.id!==el.dataset.id);save();closeSheet();render()},
   cToJob:()=>{const c=saveC();if(c)jobForm({villa:c.villa,unit:c.unit,contact:c.phone,title:c.title,memo:c.content,complaintId:c.id,date:todayStr()})},
   cSms:()=>{const c=saveC();if(c)openSms({빌라:(c.villa||""),호수:c.unit,작업:c.title},c.phone)},
@@ -1244,6 +1275,8 @@ document.addEventListener('click',e=>{
 document.addEventListener('submit',e=>e.preventDefault());
 document.addEventListener('input',e=>{
   if(e.target.id==='q'){searchQ=e.target.value;updSearch();return}
+  // 전화번호 칸: 숫자만 쳐도 하이픈(-) 자동 입력 (쉼표로 여러 개 적은 칸은 그대로)
+  if((e.target.type==='tel'||e.target.dataset.sf==='contact')&&!/,/.test(e.target.value)){const f=fmtPhone(e.target.value);if(f!==e.target.value)e.target.value=f}
   if(e.target.dataset.sf&&scan.items){const it=scan.items[+e.target.dataset.i];it[e.target.dataset.sf]=e.target.value;if(e.target.dataset.sf==='work')it.title='';
     if(e.target.dataset.sf==='villa'){const b=e.target.closest('.ai-item').querySelector('.check b');b.textContent=`${+e.target.dataset.i+1}. ${e.target.value||'건물 이름 없음'}`}return}
   if(e.target.id==='scanText'){scan.text=e.target.value;clearTimeout(A._t);A._t=setTimeout(()=>{const d=$('#scanDet');if(d)d.innerHTML=detHTML()},250)}
@@ -1269,7 +1302,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('#viewer.on'))
   let migrated=false;
   for(const r of[...state.jobs,...state.complaints,...state.bills])if('villaId' in r){r.villa=r.villa||state.villas.find(v=>v.id===r.villaId)?.name||'';delete r.villaId;migrated=true}
   if(migrated)save();
-  renderNav();render();
+  renderNav();$('#qIc').innerHTML=ic('search',20);$('#qClr').innerHTML=ic('x',16);render();
   setTimeout(()=>$('#splash').classList.add('hide'),1100);
   setTimeout(()=>$('#splash').remove(),1700);
 })();
