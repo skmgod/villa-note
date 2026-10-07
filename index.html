@@ -1433,6 +1433,8 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('#viewer.on'))
   try{navigator.storage?.persist?.()}catch{}
   // 오프라인에서도 열리도록 (기록은 건드리지 않음)
   if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+  // 주소 끝에 #schedule 처럼 붙이면 그 화면으로 바로 열기
+  const h0=location.hash.slice(1);if(['home','schedule','scan','complaints','bills'].includes(h0))cur=h0;
   renderNav();$('#qIc').innerHTML=ic('search',20);$('#qClr').innerHTML=ic('x',16);render();
   setTimeout(()=>$('#splash').classList.add('hide'),1100);
   setTimeout(()=>$('#splash').remove(),1700);
