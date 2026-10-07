@@ -276,6 +276,8 @@ mark{background:var(--accent);color:inherit;border-radius:3px;padding:0 1px}
 .mini-row{display:flex;gap:8px;margin-bottom:14px}
 .mini-row .btn{flex:1}
 
+/* 스토어 스크린샷 촬영용 (?shot) */
+.shot #app,.shot .nav{max-width:none}
 #toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:rgba(20,24,30,.92);color:#fff;padding:11px 18px;border-radius:14px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:200;max-width:88vw;text-align:center}
 #toast.on{opacity:1;transform:translateX(-50%)}
 #viewer{position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center}
@@ -1434,6 +1436,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('#viewer.on'))
   // 오프라인에서도 열리도록 (기록은 건드리지 않음)
   if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
   // 주소 끝에 #schedule 처럼 붙이면 그 화면으로 바로 열기
+  if(/[?&]shot/.test(location.search))document.documentElement.classList.add('shot');
   const h0=location.hash.slice(1);if(['home','schedule','scan','complaints','bills'].includes(h0))cur=h0;
   renderNav();$('#qIc').innerHTML=ic('search',20);$('#qClr').innerHTML=ic('x',16);render();
   setTimeout(()=>$('#splash').classList.add('hide'),1100);
