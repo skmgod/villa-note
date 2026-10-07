@@ -9,7 +9,7 @@
 <title>빌라노트</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg">
-<link rel="apple-touch-icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
@@ -1431,6 +1431,8 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('#viewer.on'))
   if(!loadFailed)autoSnapshot();
   // 휴대폰이 저장공간 정리할 때 이 앱 기록은 지우지 않도록 요청
   try{navigator.storage?.persist?.()}catch{}
+  // 오프라인에서도 열리도록 (기록은 건드리지 않음)
+  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
   renderNav();$('#qIc').innerHTML=ic('search',20);$('#qClr').innerHTML=ic('x',16);render();
   setTimeout(()=>$('#splash').classList.add('hide'),1100);
   setTimeout(()=>$('#splash').remove(),1700);
